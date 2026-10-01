@@ -193,6 +193,31 @@ offset_right = 80.0
 offset_bottom = 110.0
 color = Color(0.55, 0.34, 0.24, 1)
 
+[node name="Roof" type="Polygon2D" parent="Structures/VillageHouse"]
+polygon = PackedVector2Array(-96, -110, 0, -178, 96, -110)
+color = Color(0.34, 0.12, 0.1, 1)
+
+[node name="Door" type="ColorRect" parent="Structures/VillageHouse"]
+offset_left = -18.0
+offset_top = 34.0
+offset_right = 18.0
+offset_bottom = 110.0
+color = Color(0.16, 0.09, 0.06, 1)
+
+[node name="WindowA" type="ColorRect" parent="Structures/VillageHouse"]
+offset_left = -58.0
+offset_top = -60.0
+offset_right = -24.0
+offset_bottom = -26.0
+color = Color(0.95, 0.74, 0.34, 1)
+
+[node name="WindowB" type="ColorRect" parent="Structures/VillageHouse"]
+offset_left = 24.0
+offset_top = -60.0
+offset_right = 58.0
+offset_bottom = -26.0
+color = Color(0.95, 0.74, 0.34, 1)
+
 [node name="NameLabel" type="Label" parent="Structures/VillageHouse"]
 offset_left = -44.0
 offset_top = -146.0
@@ -214,6 +239,42 @@ offset_top = -120.0
 offset_right = 90.0
 offset_bottom = 120.0
 color = Color(0.78, 0.68, 0.42, 1)
+
+[node name="Roof" type="Polygon2D" parent="Structures/School"]
+polygon = PackedVector2Array(-106, -120, 0, -176, 106, -120)
+color = Color(0.46, 0.22, 0.12, 1)
+
+[node name="BellTower" type="ColorRect" parent="Structures/School"]
+offset_left = -24.0
+offset_top = -196.0
+offset_right = 24.0
+offset_bottom = -120.0
+color = Color(0.68, 0.55, 0.32, 1)
+
+[node name="BellRoof" type="Polygon2D" parent="Structures/School"]
+polygon = PackedVector2Array(-34, -196, 0, -226, 34, -196)
+color = Color(0.34, 0.12, 0.1, 1)
+
+[node name="Door" type="ColorRect" parent="Structures/School"]
+offset_left = -22.0
+offset_top = 38.0
+offset_right = 22.0
+offset_bottom = 120.0
+color = Color(0.24, 0.14, 0.08, 1)
+
+[node name="WindowA" type="ColorRect" parent="Structures/School"]
+offset_left = -70.0
+offset_top = -58.0
+offset_right = -36.0
+offset_bottom = -24.0
+color = Color(0.92, 0.82, 0.48, 1)
+
+[node name="WindowB" type="ColorRect" parent="Structures/School"]
+offset_left = 36.0
+offset_top = -58.0
+offset_right = 70.0
+offset_bottom = -24.0
+color = Color(0.92, 0.82, 0.48, 1)
 
 [node name="NameLabel" type="Label" parent="Structures/School"]
 offset_left = -38.0
@@ -237,6 +298,38 @@ offset_right = 110.0
 offset_bottom = 140.0
 color = Color(0.28, 0.31, 0.33, 1)
 
+[node name="SawRoof" type="Polygon2D" parent="Structures/Factory"]
+polygon = PackedVector2Array(-110, -140, -60, -190, -10, -140, 40, -190, 110, -140)
+color = Color(0.18, 0.2, 0.22, 1)
+
+[node name="Chimney" type="ColorRect" parent="Structures/Factory"]
+offset_left = 66.0
+offset_top = -230.0
+offset_right = 100.0
+offset_bottom = -130.0
+color = Color(0.13, 0.13, 0.14, 1)
+
+[node name="Smoke" type="CPUParticles2D" parent="Structures/Factory"]
+position = Vector2(83, -236)
+emitting = true
+amount = 18
+lifetime = 2.0
+direction = Vector2(0, -1)
+spread = 35.0
+gravity = Vector2(-18, -20)
+initial_velocity_min = 12.0
+initial_velocity_max = 34.0
+scale_amount_min = 8.0
+scale_amount_max = 18.0
+color = Color(0.2, 0.2, 0.2, 0.28)
+
+[node name="Windows" type="ColorRect" parent="Structures/Factory"]
+offset_left = -76.0
+offset_top = -64.0
+offset_right = 76.0
+offset_bottom = -28.0
+color = Color(0.88, 0.62, 0.2, 1)
+
 [node name="NameLabel" type="Label" parent="Structures/Factory"]
 offset_left = -42.0
 offset_top = -176.0
@@ -258,6 +351,31 @@ offset_top = -145.0
 offset_right = 55.0
 offset_bottom = 145.0
 color = Color(0.38, 0.62, 0.72, 1)
+
+[node name="Frame" type="ColorRect" parent="Structures/Mirror"]
+offset_left = -72.0
+offset_top = -162.0
+offset_right = 72.0
+offset_bottom = 162.0
+color = Color(0.55, 0.42, 0.18, 1)
+
+[node name="Glass" type="ColorRect" parent="Structures/Mirror"]
+offset_left = -48.0
+offset_top = -132.0
+offset_right = 48.0
+offset_bottom = 116.0
+color = Color(0.5, 0.78, 0.86, 0.92)
+
+[node name="Shine" type="Polygon2D" parent="Structures/Mirror"]
+polygon = PackedVector2Array(-34, -116, -8, -130, 42, 70, 16, 84)
+color = Color(0.95, 1, 1, 0.26)
+
+[node name="Base" type="ColorRect" parent="Structures/Mirror"]
+offset_left = -46.0
+offset_top = 126.0
+offset_right = 46.0
+offset_bottom = 162.0
+color = Color(0.35, 0.25, 0.12, 1)
 
 [node name="NameLabel" type="Label" parent="Structures/Mirror"]
 offset_left = -32.0
@@ -281,6 +399,34 @@ offset_right = 90.0
 offset_bottom = 160.0
 color = Color(0.39, 0.38, 0.36, 1)
 
+[node name="CrenelA" type="ColorRect" parent="Structures/Wall"]
+offset_left = -90.0
+offset_top = -196.0
+offset_right = -48.0
+offset_bottom = -148.0
+color = Color(0.35, 0.34, 0.32, 1)
+
+[node name="CrenelB" type="ColorRect" parent="Structures/Wall"]
+offset_left = -20.0
+offset_top = -196.0
+offset_right = 20.0
+offset_bottom = -148.0
+color = Color(0.35, 0.34, 0.32, 1)
+
+[node name="CrenelC" type="ColorRect" parent="Structures/Wall"]
+offset_left = 48.0
+offset_top = -196.0
+offset_right = 90.0
+offset_bottom = -148.0
+color = Color(0.35, 0.34, 0.32, 1)
+
+[node name="Gate" type="ColorRect" parent="Structures/Wall"]
+offset_left = -32.0
+offset_top = 36.0
+offset_right = 32.0
+offset_bottom = 160.0
+color = Color(0.12, 0.09, 0.07, 1)
+
 [node name="NameLabel" type="Label" parent="Structures/Wall"]
 offset_left = -24.0
 offset_top = -196.0
@@ -303,6 +449,67 @@ offset_top = -190.0
 offset_right = 190.0
 offset_bottom = 190.0
 color = Color(0.42, 0.39, 0.45, 1)
+
+[node name="Keep" type="ColorRect" parent="Structures/Castle"]
+offset_left = -80.0
+offset_top = -280.0
+offset_right = 80.0
+offset_bottom = 190.0
+color = Color(0.36, 0.34, 0.4, 1)
+
+[node name="LeftTower" type="ColorRect" parent="Structures/Castle"]
+offset_left = -230.0
+offset_top = -250.0
+offset_right = -130.0
+offset_bottom = 190.0
+color = Color(0.32, 0.3, 0.36, 1)
+
+[node name="RightTower" type="ColorRect" parent="Structures/Castle"]
+offset_left = 130.0
+offset_top = -250.0
+offset_right = 230.0
+offset_bottom = 190.0
+color = Color(0.32, 0.3, 0.36, 1)
+
+[node name="LeftRoof" type="Polygon2D" parent="Structures/Castle"]
+polygon = PackedVector2Array(-246, -250, -180, -330, -114, -250)
+color = Color(0.22, 0.12, 0.24, 1)
+
+[node name="RightRoof" type="Polygon2D" parent="Structures/Castle"]
+polygon = PackedVector2Array(114, -250, 180, -330, 246, -250)
+color = Color(0.22, 0.12, 0.24, 1)
+
+[node name="KeepRoof" type="Polygon2D" parent="Structures/Castle"]
+polygon = PackedVector2Array(-100, -280, 0, -370, 100, -280)
+color = Color(0.26, 0.12, 0.28, 1)
+
+[node name="CastleGate" type="ColorRect" parent="Structures/Castle"]
+offset_left = -42.0
+offset_top = 72.0
+offset_right = 42.0
+offset_bottom = 190.0
+color = Color(0.1, 0.08, 0.08, 1)
+
+[node name="WindowA" type="ColorRect" parent="Structures/Castle"]
+offset_left = -184.0
+offset_top = -128.0
+offset_right = -154.0
+offset_bottom = -78.0
+color = Color(0.88, 0.7, 0.22, 1)
+
+[node name="WindowB" type="ColorRect" parent="Structures/Castle"]
+offset_left = 154.0
+offset_top = -128.0
+offset_right = 184.0
+offset_bottom = -78.0
+color = Color(0.88, 0.7, 0.22, 1)
+
+[node name="WindowC" type="ColorRect" parent="Structures/Castle"]
+offset_left = -18.0
+offset_top = -164.0
+offset_right = 18.0
+offset_bottom = -104.0
+color = Color(0.88, 0.7, 0.22, 1)
 
 [node name="NameLabel" type="Label" parent="Structures/Castle"]
 offset_left = -34.0
