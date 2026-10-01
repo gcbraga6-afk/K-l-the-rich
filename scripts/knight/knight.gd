@@ -3,15 +3,15 @@ extends Node2D
 @export var projectile_scene: PackedScene
 @export var cooldown_seconds := 0.8
 @export var max_ammo := 8
-@export var aim_touch_radius := 90.0
+@export var aim_touch_radius := 130.0
 @export var min_drag_px := 18.0
-@export var max_drag_px := 180.0
-@export var max_muzzle_speed := 900.0
-@export var trajectory_points := 20
+@export var max_drag_px := 340.0
+@export var max_muzzle_speed := 1250.0
+@export var trajectory_points := 9
 @export var trajectory_step := 0.08
 
 @onready var cannon_pivot: Node2D = $CannonPivot
-@onready var aim_line: Line2D = $AimLine
+@onready var aim_dots: Node2D = $AimDots
 
 var _cooldown := 0.0
 var _ammo := 0
@@ -21,7 +21,7 @@ var _aim_velocity := Vector2.ZERO
 
 func _ready() -> void:
 	_ammo = max_ammo
-	aim_line.visible = false
+	aim_dots.visible = false
 	call_deferred("_emit_ammo_changed")
 
 
@@ -36,7 +36,7 @@ func _process(delta: float) -> void:
 
 	if Input.is_action_just_pressed("fire") and _can_start_aim():
 		_is_aiming = true
-		aim_line.visible = true
+		aim_dots.visible = true
 
 	if _is_aiming:
 		_update_drag_aim()
@@ -60,7 +60,7 @@ func _update_drag_aim() -> void:
 
 	if distance <= 0.001:
 		_aim_velocity = Vector2.ZERO
-		aim_line.points = PackedVector2Array()
+		_update_trajectory_preview(muzzle_position, Vector2.ZERO)
 		return
 
 	var clamped_distance := minf(distance, max_drag_px)
@@ -73,20 +73,28 @@ func _update_drag_aim() -> void:
 
 func _update_trajectory_preview(start_position: Vector2, velocity: Vector2) -> void:
 	var gravity := ProjectSettings.get_setting("physics/2d/default_gravity") as float
-	var points := PackedVector2Array()
-	points.append(to_local(start_position))
+	var dots := aim_dots.get_children()
 
-	for i in range(1, trajectory_points + 1):
+	for dot in dots:
+		dot.visible = false
+
+	if velocity.length() <= 0.001:
+		return
+
+	var dot_count := mini(trajectory_points, dots.size())
+	for i in range(dot_count):
 		var t := float(i) * trajectory_step
 		var predicted := start_position + velocity * t + Vector2(0.0, 0.5 * gravity * t * t)
-		points.append(to_local(predicted))
-
-	aim_line.points = points
+		var dot := dots[i] as ColorRect
+		dot.visible = true
+		dot.position = to_local(predicted)
+		var fade := 1.0 - float(i) / float(dot_count)
+		dot.color = Color(1.0, 0.86, 0.38, 0.28 + fade * 0.5)
 
 
 func _release_aim() -> void:
 	_is_aiming = false
-	aim_line.visible = false
+	aim_dots.visible = false
 
 	if _aim_velocity.length() < min_drag_px / max_drag_px * max_muzzle_speed:
 		return

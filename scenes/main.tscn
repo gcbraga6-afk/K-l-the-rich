@@ -1,4 +1,4 @@
-[gd_scene load_steps=10 format=3]
+[gd_scene load_steps=11 format=3]
 
 [ext_resource type="Script" path="res://scripts/world/main.gd" id="1_main"]
 [ext_resource type="Script" path="res://scripts/camera/kingdom_camera.gd" id="2_camera"]
@@ -6,6 +6,7 @@
 [ext_resource type="PackedScene" path="res://scenes/projectile.tscn" id="4_projectile"]
 [ext_resource type="Script" path="res://scripts/world/structure.gd" id="5_structure"]
 [ext_resource type="Script" path="res://scripts/ui/hud.gd" id="6_hud"]
+[ext_resource type="PackedScene" path="res://scenes/characters/simple_walker.tscn" id="7_walker"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_ground"]
 size = Vector2(5200, 80)
@@ -110,10 +111,70 @@ offset_right = 72.0
 offset_bottom = 8.0
 color = Color(0.07, 0.07, 0.07, 1)
 
-[node name="AimLine" type="Line2D" parent="Knight"]
-points = PackedVector2Array(24, -44, 220, -44)
-width = 3.0
-default_color = Color(1, 0.86, 0.38, 0.55)
+[node name="AimDots" type="Node2D" parent="Knight"]
+
+[node name="Dot01" type="ColorRect" parent="Knight/AimDots"]
+offset_left = -4.0
+offset_top = -4.0
+offset_right = 4.0
+offset_bottom = 4.0
+color = Color(1, 0.86, 0.38, 0.75)
+
+[node name="Dot02" type="ColorRect" parent="Knight/AimDots"]
+offset_left = -4.0
+offset_top = -4.0
+offset_right = 4.0
+offset_bottom = 4.0
+color = Color(1, 0.86, 0.38, 0.7)
+
+[node name="Dot03" type="ColorRect" parent="Knight/AimDots"]
+offset_left = -4.0
+offset_top = -4.0
+offset_right = 4.0
+offset_bottom = 4.0
+color = Color(1, 0.86, 0.38, 0.65)
+
+[node name="Dot04" type="ColorRect" parent="Knight/AimDots"]
+offset_left = -4.0
+offset_top = -4.0
+offset_right = 4.0
+offset_bottom = 4.0
+color = Color(1, 0.86, 0.38, 0.6)
+
+[node name="Dot05" type="ColorRect" parent="Knight/AimDots"]
+offset_left = -4.0
+offset_top = -4.0
+offset_right = 4.0
+offset_bottom = 4.0
+color = Color(1, 0.86, 0.38, 0.55)
+
+[node name="Dot06" type="ColorRect" parent="Knight/AimDots"]
+offset_left = -4.0
+offset_top = -4.0
+offset_right = 4.0
+offset_bottom = 4.0
+color = Color(1, 0.86, 0.38, 0.5)
+
+[node name="Dot07" type="ColorRect" parent="Knight/AimDots"]
+offset_left = -4.0
+offset_top = -4.0
+offset_right = 4.0
+offset_bottom = 4.0
+color = Color(1, 0.86, 0.38, 0.45)
+
+[node name="Dot08" type="ColorRect" parent="Knight/AimDots"]
+offset_left = -4.0
+offset_top = -4.0
+offset_right = 4.0
+offset_bottom = 4.0
+color = Color(1, 0.86, 0.38, 0.4)
+
+[node name="Dot09" type="ColorRect" parent="Knight/AimDots"]
+offset_left = -4.0
+offset_top = -4.0
+offset_right = 4.0
+offset_bottom = 4.0
+color = Color(1, 0.86, 0.38, 0.35)
 
 [node name="Structures" type="Node2D" parent="."]
 
@@ -250,6 +311,49 @@ offset_right = 92.0
 offset_bottom = -200.0
 theme_override_font_sizes/font_size = 18
 text = "Castle"
+
+[node name="Characters" type="Node2D" parent="."]
+
+[node name="WorkerA" parent="Characters" instance=ExtResource("7_walker")]
+position = Vector2(760, 660)
+left_x = 760.0
+right_x = 2200.0
+label = "Worker"
+body_color = Color(0.22, 0.19, 0.16, 1)
+
+[node name="WorkerB" parent="Characters" instance=ExtResource("7_walker")]
+position = Vector2(1180, 660)
+speed = 55.0
+left_x = 900.0
+right_x = 2200.0
+label = "Worker"
+body_color = Color(0.24, 0.22, 0.18, 1)
+
+[node name="ChildA" parent="Characters" instance=ExtResource("7_walker")]
+position = Vector2(1450, 660)
+speed = 36.0
+left_x = 1320.0
+right_x = 1660.0
+label = "Child"
+body_color = Color(0.58, 0.42, 0.2, 1)
+
+[node name="SoldierA" parent="Characters" instance=ExtResource("7_walker")]
+position = Vector2(3360, 660)
+speed = 62.0
+left_x = 3260.0
+right_x = 3620.0
+label = "Soldier"
+body_color = Color(0.12, 0.16, 0.2, 1)
+head_color = Color(0.48, 0.42, 0.35, 1)
+
+[node name="SoldierB" parent="Characters" instance=ExtResource("7_walker")]
+position = Vector2(3820, 660)
+speed = 58.0
+left_x = 3500.0
+right_x = 4200.0
+label = "Soldier"
+body_color = Color(0.12, 0.16, 0.2, 1)
+head_color = Color(0.48, 0.42, 0.35, 1)
 
 [node name="HUD" type="CanvasLayer" parent="."]
 script = ExtResource("6_hud")
