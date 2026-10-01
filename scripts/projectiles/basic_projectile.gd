@@ -2,6 +2,7 @@ extends RigidBody2D
 
 @export var impact_severity := 0.25
 @export var narrative_value := 0.1
+@export var impact_effect_scene: PackedScene
 
 var _has_impacted := false
 
@@ -22,6 +23,7 @@ func _on_body_entered(body: Node) -> void:
 		"severity": impact_severity,
 		"narrative_value": narrative_value,
 	})
+	EventBus.emit_camera_shake_requested(5.0, 0.16)
 
 	if body.is_in_group("structures"):
 		EventBus.emit_structure_hit({
@@ -33,5 +35,14 @@ func _on_body_entered(body: Node) -> void:
 			"narrative_value": narrative_value,
 		})
 
+	_spawn_impact_effect()
 	queue_free()
 
+
+func _spawn_impact_effect() -> void:
+	if impact_effect_scene == null:
+		return
+
+	var effect := impact_effect_scene.instantiate() as Node2D
+	effect.global_position = global_position
+	get_tree().current_scene.add_child(effect)
