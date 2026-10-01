@@ -1,7 +1,8 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://scripts/projectiles/basic_projectile.gd" id="1_projectile"]
 [ext_resource type="PackedScene" path="res://scenes/impact_burst.tscn" id="2_impact"]
+[ext_resource type="PackedScene" path="res://scenes/explosion.tscn" id="3_explosion"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_projectile"]
 radius = 8.0
@@ -12,6 +13,7 @@ contact_monitor = true
 max_contacts_reported = 4
 script = ExtResource("1_projectile")
 impact_effect_scene = ExtResource("2_impact")
+explosion_scene = ExtResource("3_explosion")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("CircleShape2D_projectile")

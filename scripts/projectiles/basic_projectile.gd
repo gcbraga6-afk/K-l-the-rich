@@ -3,6 +3,7 @@ extends RigidBody2D
 @export var impact_severity := 0.25
 @export var narrative_value := 0.1
 @export var impact_effect_scene: PackedScene
+@export var explosion_scene: PackedScene
 
 var _has_impacted := false
 
@@ -36,6 +37,7 @@ func _on_body_entered(body: Node) -> void:
 		})
 
 	_spawn_impact_effect()
+	_spawn_explosion()
 	queue_free()
 
 
@@ -46,3 +48,12 @@ func _spawn_impact_effect() -> void:
 	var effect := impact_effect_scene.instantiate() as Node2D
 	effect.global_position = global_position
 	get_tree().current_scene.add_child(effect)
+
+
+func _spawn_explosion() -> void:
+	if explosion_scene == null:
+		return
+
+	var explosion := explosion_scene.instantiate() as Node2D
+	explosion.global_position = global_position
+	get_tree().current_scene.add_child(explosion)
