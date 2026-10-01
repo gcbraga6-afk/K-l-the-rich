@@ -2,6 +2,8 @@
 
 Documento de continuidade do projeto a partir da conversa "Reformular Castle Siege" e da releitura do material de Castle Siege enviado na conversa.
 
+Nota de continuidade em 1 de outubro de 2026: as decisoes fechadas posteriormente foram consolidadas em `GAME_DESIGN.md` e `PROTOTYPE_01.md`. Este relatorio permanece como historico e contexto; os novos documentos funcionam como referencia operacional mais direta para o design atual e para o Prototype 0.1.
+
 ## 1. Conceito central
 
 K**l the Rich evolui a partir de Castle Siege, mas deixa de ser apenas uma fase com objetivo fechado e passa a ser um jogo sistêmico sobre sociedades em transformação.
