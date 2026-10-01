@@ -1,0 +1,141 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://scripts/world/main.gd" id="1_main"]
+[ext_resource type="Script" path="res://scripts/camera/kingdom_camera.gd" id="2_camera"]
+[ext_resource type="Script" path="res://scripts/knight/knight.gd" id="3_knight"]
+[ext_resource type="PackedScene" path="res://scenes/projectile.tscn" id="4_projectile"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_ground"]
+size = Vector2(5200, 80)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_target"]
+size = Vector2(160, 220)
+
+[sub_resource type="CanvasItemMaterial" id="CanvasItemMaterial_structure"]
+
+[node name="DryKingdom" type="Node2D"]
+script = ExtResource("1_main")
+
+[node name="WorldBounds" type="Node2D" parent="."]
+
+[node name="Ground" type="StaticBody2D" parent="WorldBounds"]
+position = Vector2(2600, 660)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="WorldBounds/Ground"]
+shape = SubResource("RectangleShape2D_ground")
+
+[node name="GroundVisual" type="ColorRect" parent="WorldBounds/Ground"]
+offset_left = -2600.0
+offset_top = -40.0
+offset_right = 2600.0
+offset_bottom = 40.0
+color = Color(0.18, 0.16, 0.13, 1)
+
+[node name="KingdomCamera" type="Camera2D" parent="."]
+position = Vector2(640, 360)
+current = true
+zoom = Vector2(1, 1)
+script = ExtResource("2_camera")
+
+[node name="Knight" type="Node2D" parent="."]
+position = Vector2(150, 585)
+script = ExtResource("3_knight")
+projectile_scene = ExtResource("4_projectile")
+
+[node name="Body" type="ColorRect" parent="Knight"]
+offset_left = -24.0
+offset_top = -64.0
+offset_right = 24.0
+offset_bottom = 0.0
+color = Color(0.18, 0.2, 0.25, 1)
+
+[node name="CannonPivot" type="Node2D" parent="Knight"]
+position = Vector2(24, -44)
+
+[node name="Cannon" type="ColorRect" parent="Knight/CannonPivot"]
+offset_left = 0.0
+offset_top = -8.0
+offset_right = 72.0
+offset_bottom = 8.0
+color = Color(0.07, 0.07, 0.07, 1)
+
+[node name="Structures" type="Node2D" parent="."]
+
+[node name="VillageHouse" type="StaticBody2D" parent="Structures" groups=["structures"]]
+position = Vector2(980, 550)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Structures/VillageHouse"]
+shape = SubResource("RectangleShape2D_target")
+
+[node name="Visual" type="ColorRect" parent="Structures/VillageHouse"]
+material = SubResource("CanvasItemMaterial_structure")
+offset_left = -80.0
+offset_top = -110.0
+offset_right = 80.0
+offset_bottom = 110.0
+color = Color(0.55, 0.34, 0.24, 1)
+
+[node name="School" type="StaticBody2D" parent="Structures" groups=["structures"]]
+position = Vector2(1550, 540)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Structures/School"]
+shape = SubResource("RectangleShape2D_target")
+
+[node name="Visual" type="ColorRect" parent="Structures/School"]
+offset_left = -90.0
+offset_top = -120.0
+offset_right = 90.0
+offset_bottom = 120.0
+color = Color(0.78, 0.68, 0.42, 1)
+
+[node name="Factory" type="StaticBody2D" parent="Structures" groups=["structures"]]
+position = Vector2(2200, 520)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Structures/Factory"]
+shape = SubResource("RectangleShape2D_target")
+
+[node name="Visual" type="ColorRect" parent="Structures/Factory"]
+offset_left = -110.0
+offset_top = -140.0
+offset_right = 110.0
+offset_bottom = 140.0
+color = Color(0.28, 0.31, 0.33, 1)
+
+[node name="Mirror" type="StaticBody2D" parent="Structures" groups=["structures"]]
+position = Vector2(2850, 515)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Structures/Mirror"]
+shape = SubResource("RectangleShape2D_target")
+
+[node name="Visual" type="ColorRect" parent="Structures/Mirror"]
+offset_left = -55.0
+offset_top = -145.0
+offset_right = 55.0
+offset_bottom = 145.0
+color = Color(0.38, 0.62, 0.72, 1)
+
+[node name="Wall" type="StaticBody2D" parent="Structures" groups=["structures"]]
+position = Vector2(3500, 500)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Structures/Wall"]
+shape = SubResource("RectangleShape2D_target")
+
+[node name="Visual" type="ColorRect" parent="Structures/Wall"]
+offset_left = -90.0
+offset_top = -160.0
+offset_right = 90.0
+offset_bottom = 160.0
+color = Color(0.39, 0.38, 0.36, 1)
+
+[node name="Castle" type="StaticBody2D" parent="Structures" groups=["structures"]]
+position = Vector2(4500, 470)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Structures/Castle"]
+shape = SubResource("RectangleShape2D_target")
+
+[node name="Visual" type="ColorRect" parent="Structures/Castle"]
+offset_left = -190.0
+offset_top = -190.0
+offset_right = 190.0
+offset_bottom = 190.0
+color = Color(0.42, 0.39, 0.45, 1)
