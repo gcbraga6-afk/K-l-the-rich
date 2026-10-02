@@ -1,5 +1,8 @@
 extends Node
 
+signal world_event(event: Dictionary)
+signal weapon_changed(weapon: String)
+
 signal projectile_fired(event: Dictionary)
 signal projectile_impacted(event: Dictionary)
 signal structure_hit(event: Dictionary)

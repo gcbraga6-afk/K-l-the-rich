@@ -1,11 +1,11 @@
-[gd_scene load_steps=11 format=3]
+[gd_scene format=3 uid="uid://q46d5750dlng"]
 
-[ext_resource type="Script" path="res://scripts/world/main.gd" id="1_main"]
-[ext_resource type="Script" path="res://scripts/camera/kingdom_camera.gd" id="2_camera"]
-[ext_resource type="Script" path="res://scripts/knight/knight.gd" id="3_knight"]
+[ext_resource type="Script" uid="uid://7l7hnldubntj" path="res://scripts/world/main.gd" id="1_main"]
+[ext_resource type="Script" uid="uid://blg17xdr31pjp" path="res://scripts/camera/kingdom_camera.gd" id="2_camera"]
+[ext_resource type="Script" uid="uid://d1d6f5a3jl056" path="res://scripts/knight/knight.gd" id="3_knight"]
 [ext_resource type="PackedScene" path="res://scenes/projectile.tscn" id="4_projectile"]
-[ext_resource type="Script" path="res://scripts/world/structure.gd" id="5_structure"]
-[ext_resource type="Script" path="res://scripts/ui/hud.gd" id="6_hud"]
+[ext_resource type="Script" uid="uid://b8jw2rhflvgw6" path="res://scripts/world/structure.gd" id="5_structure"]
+[ext_resource type="Script" uid="uid://dkxcncjuwxks" path="res://scripts/ui/hud.gd" id="6_hud"]
 [ext_resource type="PackedScene" path="res://scenes/characters/simple_walker.tscn" id="7_walker"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_ground"]
@@ -16,50 +16,50 @@ size = Vector2(160, 220)
 
 [sub_resource type="CanvasItemMaterial" id="CanvasItemMaterial_structure"]
 
-[node name="DryKingdom" type="Node2D"]
+[node name="DryKingdom" type="Node2D" unique_id=135641464]
 script = ExtResource("1_main")
 
-[node name="Backdrop" type="Node2D" parent="."]
+[node name="Backdrop" type="Node2D" parent="." unique_id=1314389787]
 
-[node name="Sky" type="ColorRect" parent="Backdrop"]
+[node name="Sky" type="ColorRect" parent="Backdrop" unique_id=1325811536]
 offset_left = -200.0
 offset_top = -80.0
 offset_right = 5400.0
 offset_bottom = 660.0
 color = Color(0.62, 0.78, 0.86, 1)
 
-[node name="Sun" type="ColorRect" parent="Backdrop"]
+[node name="Sun" type="ColorRect" parent="Backdrop" unique_id=1580420350]
 offset_left = 760.0
 offset_top = 92.0
 offset_right = 850.0
 offset_bottom = 182.0
 color = Color(0.95, 0.78, 0.32, 1)
 
-[node name="FarHills" type="ColorRect" parent="Backdrop"]
+[node name="FarHills" type="ColorRect" parent="Backdrop" unique_id=729282375]
 offset_left = -200.0
 offset_top = 430.0
 offset_right = 5400.0
 offset_bottom = 660.0
 color = Color(0.42, 0.51, 0.42, 1)
 
-[node name="WorldBounds" type="Node2D" parent="."]
+[node name="WorldBounds" type="Node2D" parent="." unique_id=368633814]
 
-[node name="Ground" type="StaticBody2D" parent="WorldBounds"]
+[node name="Ground" type="StaticBody2D" parent="WorldBounds" unique_id=188708354]
 position = Vector2(2600, 660)
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="WorldBounds/Ground"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="WorldBounds/Ground" unique_id=310805129]
 shape = SubResource("RectangleShape2D_ground")
 
-[node name="GroundVisual" type="ColorRect" parent="WorldBounds/Ground"]
+[node name="GroundVisual" type="ColorRect" parent="WorldBounds/Ground" unique_id=1909670233]
 offset_left = -2600.0
 offset_top = -40.0
 offset_right = 2600.0
 offset_bottom = 40.0
 color = Color(0.18, 0.16, 0.13, 1)
 
-[node name="DryCracks" type="Node2D" parent="WorldBounds"]
+[node name="DryCracks" type="Node2D" parent="WorldBounds" unique_id=1807150054]
 
-[node name="CrackA" type="ColorRect" parent="WorldBounds/DryCracks"]
+[node name="CrackA" type="ColorRect" parent="WorldBounds/DryCracks" unique_id=1747613608]
 offset_left = 540.0
 offset_top = 642.0
 offset_right = 760.0
@@ -67,7 +67,7 @@ offset_bottom = 648.0
 rotation = 0.08
 color = Color(0.08, 0.07, 0.06, 1)
 
-[node name="CrackB" type="ColorRect" parent="WorldBounds/DryCracks"]
+[node name="CrackB" type="ColorRect" parent="WorldBounds/DryCracks" unique_id=1329838255]
 offset_left = 1340.0
 offset_top = 636.0
 offset_right = 1580.0
@@ -75,7 +75,7 @@ offset_bottom = 642.0
 rotation = -0.06
 color = Color(0.08, 0.07, 0.06, 1)
 
-[node name="CrackC" type="ColorRect" parent="WorldBounds/DryCracks"]
+[node name="CrackC" type="ColorRect" parent="WorldBounds/DryCracks" unique_id=2022143818]
 offset_left = 2580.0
 offset_top = 650.0
 offset_right = 2870.0
@@ -83,109 +83,105 @@ offset_bottom = 656.0
 rotation = 0.04
 color = Color(0.08, 0.07, 0.06, 1)
 
-[node name="KingdomCamera" type="Camera2D" parent="."]
+[node name="KingdomCamera" type="Camera2D" parent="." unique_id=441388299]
 position = Vector2(640, 360)
-current = true
-zoom = Vector2(1, 1)
 script = ExtResource("2_camera")
 
-[node name="Knight" type="Node2D" parent="."]
+[node name="Knight" type="Node2D" parent="." unique_id=1067489581]
 position = Vector2(150, 585)
 script = ExtResource("3_knight")
 projectile_scene = ExtResource("4_projectile")
 
-[node name="Body" type="ColorRect" parent="Knight"]
+[node name="Body" type="ColorRect" parent="Knight" unique_id=1763872106]
 offset_left = -24.0
 offset_top = -64.0
 offset_right = 24.0
-offset_bottom = 0.0
 color = Color(0.18, 0.2, 0.25, 1)
 
-[node name="CannonPivot" type="Node2D" parent="Knight"]
+[node name="CannonPivot" type="Node2D" parent="Knight" unique_id=343601920]
 position = Vector2(24, -44)
 
-[node name="Cannon" type="ColorRect" parent="Knight/CannonPivot"]
-offset_left = 0.0
+[node name="Cannon" type="ColorRect" parent="Knight/CannonPivot" unique_id=1382387682]
 offset_top = -8.0
 offset_right = 72.0
 offset_bottom = 8.0
 color = Color(0.07, 0.07, 0.07, 1)
 
-[node name="AimDots" type="Node2D" parent="Knight"]
+[node name="AimDots" type="Node2D" parent="Knight" unique_id=2045766991]
 
-[node name="Dot01" type="ColorRect" parent="Knight/AimDots"]
+[node name="Dot01" type="ColorRect" parent="Knight/AimDots" unique_id=160952223]
 offset_left = -4.0
 offset_top = -4.0
 offset_right = 4.0
 offset_bottom = 4.0
 color = Color(1, 0.86, 0.38, 0.75)
 
-[node name="Dot02" type="ColorRect" parent="Knight/AimDots"]
+[node name="Dot02" type="ColorRect" parent="Knight/AimDots" unique_id=1242770371]
 offset_left = -4.0
 offset_top = -4.0
 offset_right = 4.0
 offset_bottom = 4.0
 color = Color(1, 0.86, 0.38, 0.7)
 
-[node name="Dot03" type="ColorRect" parent="Knight/AimDots"]
+[node name="Dot03" type="ColorRect" parent="Knight/AimDots" unique_id=1480669245]
 offset_left = -4.0
 offset_top = -4.0
 offset_right = 4.0
 offset_bottom = 4.0
 color = Color(1, 0.86, 0.38, 0.65)
 
-[node name="Dot04" type="ColorRect" parent="Knight/AimDots"]
+[node name="Dot04" type="ColorRect" parent="Knight/AimDots" unique_id=960381193]
 offset_left = -4.0
 offset_top = -4.0
 offset_right = 4.0
 offset_bottom = 4.0
 color = Color(1, 0.86, 0.38, 0.6)
 
-[node name="Dot05" type="ColorRect" parent="Knight/AimDots"]
+[node name="Dot05" type="ColorRect" parent="Knight/AimDots" unique_id=147069610]
 offset_left = -4.0
 offset_top = -4.0
 offset_right = 4.0
 offset_bottom = 4.0
 color = Color(1, 0.86, 0.38, 0.55)
 
-[node name="Dot06" type="ColorRect" parent="Knight/AimDots"]
+[node name="Dot06" type="ColorRect" parent="Knight/AimDots" unique_id=1025567337]
 offset_left = -4.0
 offset_top = -4.0
 offset_right = 4.0
 offset_bottom = 4.0
 color = Color(1, 0.86, 0.38, 0.5)
 
-[node name="Dot07" type="ColorRect" parent="Knight/AimDots"]
+[node name="Dot07" type="ColorRect" parent="Knight/AimDots" unique_id=1230143010]
 offset_left = -4.0
 offset_top = -4.0
 offset_right = 4.0
 offset_bottom = 4.0
 color = Color(1, 0.86, 0.38, 0.45)
 
-[node name="Dot08" type="ColorRect" parent="Knight/AimDots"]
+[node name="Dot08" type="ColorRect" parent="Knight/AimDots" unique_id=1046495990]
 offset_left = -4.0
 offset_top = -4.0
 offset_right = 4.0
 offset_bottom = 4.0
 color = Color(1, 0.86, 0.38, 0.4)
 
-[node name="Dot09" type="ColorRect" parent="Knight/AimDots"]
+[node name="Dot09" type="ColorRect" parent="Knight/AimDots" unique_id=739706886]
 offset_left = -4.0
 offset_top = -4.0
 offset_right = 4.0
 offset_bottom = 4.0
 color = Color(1, 0.86, 0.38, 0.35)
 
-[node name="Structures" type="Node2D" parent="."]
+[node name="Structures" type="Node2D" parent="." unique_id=2142976820]
 
-[node name="VillageHouse" type="StaticBody2D" parent="Structures" groups=["structures"]]
+[node name="VillageHouse" type="StaticBody2D" parent="Structures" unique_id=887324917 groups=["structures"]]
 position = Vector2(980, 550)
 script = ExtResource("5_structure")
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Structures/VillageHouse"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Structures/VillageHouse" unique_id=1242869199]
 shape = SubResource("RectangleShape2D_target")
 
-[node name="Visual" type="ColorRect" parent="Structures/VillageHouse"]
+[node name="Visual" type="ColorRect" parent="Structures/VillageHouse" unique_id=495006688]
 material = SubResource("CanvasItemMaterial_structure")
 offset_left = -80.0
 offset_top = -110.0
@@ -193,32 +189,32 @@ offset_right = 80.0
 offset_bottom = 110.0
 color = Color(0.55, 0.34, 0.24, 1)
 
-[node name="Roof" type="Polygon2D" parent="Structures/VillageHouse"]
-polygon = PackedVector2Array(-96, -110, 0, -178, 96, -110)
+[node name="Roof" type="Polygon2D" parent="Structures/VillageHouse" unique_id=1090712899]
 color = Color(0.34, 0.12, 0.1, 1)
+polygon = PackedVector2Array(-96, -110, 0, -178, 96, -110)
 
-[node name="Door" type="ColorRect" parent="Structures/VillageHouse"]
+[node name="Door" type="ColorRect" parent="Structures/VillageHouse" unique_id=1878573740]
 offset_left = -18.0
 offset_top = 34.0
 offset_right = 18.0
 offset_bottom = 110.0
 color = Color(0.16, 0.09, 0.06, 1)
 
-[node name="WindowA" type="ColorRect" parent="Structures/VillageHouse"]
+[node name="WindowA" type="ColorRect" parent="Structures/VillageHouse" unique_id=2046568732]
 offset_left = -58.0
 offset_top = -60.0
 offset_right = -24.0
 offset_bottom = -26.0
 color = Color(0.95, 0.74, 0.34, 1)
 
-[node name="WindowB" type="ColorRect" parent="Structures/VillageHouse"]
+[node name="WindowB" type="ColorRect" parent="Structures/VillageHouse" unique_id=1019231899]
 offset_left = 24.0
 offset_top = -60.0
 offset_right = 58.0
 offset_bottom = -26.0
 color = Color(0.95, 0.74, 0.34, 1)
 
-[node name="NameLabel" type="Label" parent="Structures/VillageHouse"]
+[node name="NameLabel" type="Label" parent="Structures/VillageHouse" unique_id=428082162]
 offset_left = -44.0
 offset_top = -146.0
 offset_right = 70.0
@@ -226,57 +222,57 @@ offset_bottom = -120.0
 theme_override_font_sizes/font_size = 18
 text = "Village"
 
-[node name="School" type="StaticBody2D" parent="Structures" groups=["structures"]]
+[node name="School" type="StaticBody2D" parent="Structures" unique_id=1524877569 groups=["structures"]]
 position = Vector2(1550, 540)
 script = ExtResource("5_structure")
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Structures/School"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Structures/School" unique_id=874453867]
 shape = SubResource("RectangleShape2D_target")
 
-[node name="Visual" type="ColorRect" parent="Structures/School"]
+[node name="Visual" type="ColorRect" parent="Structures/School" unique_id=1419595493]
 offset_left = -90.0
 offset_top = -120.0
 offset_right = 90.0
 offset_bottom = 120.0
 color = Color(0.78, 0.68, 0.42, 1)
 
-[node name="Roof" type="Polygon2D" parent="Structures/School"]
-polygon = PackedVector2Array(-106, -120, 0, -176, 106, -120)
+[node name="Roof" type="Polygon2D" parent="Structures/School" unique_id=368144920]
 color = Color(0.46, 0.22, 0.12, 1)
+polygon = PackedVector2Array(-106, -120, 0, -176, 106, -120)
 
-[node name="BellTower" type="ColorRect" parent="Structures/School"]
+[node name="BellTower" type="ColorRect" parent="Structures/School" unique_id=1248368829]
 offset_left = -24.0
 offset_top = -196.0
 offset_right = 24.0
 offset_bottom = -120.0
 color = Color(0.68, 0.55, 0.32, 1)
 
-[node name="BellRoof" type="Polygon2D" parent="Structures/School"]
-polygon = PackedVector2Array(-34, -196, 0, -226, 34, -196)
+[node name="BellRoof" type="Polygon2D" parent="Structures/School" unique_id=1840556821]
 color = Color(0.34, 0.12, 0.1, 1)
+polygon = PackedVector2Array(-34, -196, 0, -226, 34, -196)
 
-[node name="Door" type="ColorRect" parent="Structures/School"]
+[node name="Door" type="ColorRect" parent="Structures/School" unique_id=1499795219]
 offset_left = -22.0
 offset_top = 38.0
 offset_right = 22.0
 offset_bottom = 120.0
 color = Color(0.24, 0.14, 0.08, 1)
 
-[node name="WindowA" type="ColorRect" parent="Structures/School"]
+[node name="WindowA" type="ColorRect" parent="Structures/School" unique_id=1595509993]
 offset_left = -70.0
 offset_top = -58.0
 offset_right = -36.0
 offset_bottom = -24.0
 color = Color(0.92, 0.82, 0.48, 1)
 
-[node name="WindowB" type="ColorRect" parent="Structures/School"]
+[node name="WindowB" type="ColorRect" parent="Structures/School" unique_id=116450934]
 offset_left = 36.0
 offset_top = -58.0
 offset_right = 70.0
 offset_bottom = -24.0
 color = Color(0.92, 0.82, 0.48, 1)
 
-[node name="NameLabel" type="Label" parent="Structures/School"]
+[node name="NameLabel" type="Label" parent="Structures/School" unique_id=2074885433]
 offset_left = -38.0
 offset_top = -156.0
 offset_right = 70.0
@@ -284,34 +280,33 @@ offset_bottom = -130.0
 theme_override_font_sizes/font_size = 18
 text = "School"
 
-[node name="Factory" type="StaticBody2D" parent="Structures" groups=["structures"]]
+[node name="Factory" type="StaticBody2D" parent="Structures" unique_id=825625767 groups=["structures"]]
 position = Vector2(2200, 520)
 script = ExtResource("5_structure")
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Structures/Factory"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Structures/Factory" unique_id=236610398]
 shape = SubResource("RectangleShape2D_target")
 
-[node name="Visual" type="ColorRect" parent="Structures/Factory"]
+[node name="Visual" type="ColorRect" parent="Structures/Factory" unique_id=1810606329]
 offset_left = -110.0
 offset_top = -140.0
 offset_right = 110.0
 offset_bottom = 140.0
 color = Color(0.28, 0.31, 0.33, 1)
 
-[node name="SawRoof" type="Polygon2D" parent="Structures/Factory"]
-polygon = PackedVector2Array(-110, -140, -60, -190, -10, -140, 40, -190, 110, -140)
+[node name="SawRoof" type="Polygon2D" parent="Structures/Factory" unique_id=1150692923]
 color = Color(0.18, 0.2, 0.22, 1)
+polygon = PackedVector2Array(-110, -140, -60, -190, -10, -140, 40, -190, 110, -140)
 
-[node name="Chimney" type="ColorRect" parent="Structures/Factory"]
+[node name="Chimney" type="ColorRect" parent="Structures/Factory" unique_id=2056641979]
 offset_left = 66.0
 offset_top = -230.0
 offset_right = 100.0
 offset_bottom = -130.0
 color = Color(0.13, 0.13, 0.14, 1)
 
-[node name="Smoke" type="CPUParticles2D" parent="Structures/Factory"]
+[node name="Smoke" type="CPUParticles2D" parent="Structures/Factory" unique_id=1761587394]
 position = Vector2(83, -236)
-emitting = true
 amount = 18
 lifetime = 2.0
 direction = Vector2(0, -1)
@@ -323,14 +318,14 @@ scale_amount_min = 8.0
 scale_amount_max = 18.0
 color = Color(0.2, 0.2, 0.2, 0.28)
 
-[node name="Windows" type="ColorRect" parent="Structures/Factory"]
+[node name="Windows" type="ColorRect" parent="Structures/Factory" unique_id=652732984]
 offset_left = -76.0
 offset_top = -64.0
 offset_right = 76.0
 offset_bottom = -28.0
 color = Color(0.88, 0.62, 0.2, 1)
 
-[node name="NameLabel" type="Label" parent="Structures/Factory"]
+[node name="NameLabel" type="Label" parent="Structures/Factory" unique_id=1964720185]
 offset_left = -42.0
 offset_top = -176.0
 offset_right = 88.0
@@ -338,46 +333,46 @@ offset_bottom = -150.0
 theme_override_font_sizes/font_size = 18
 text = "Factory"
 
-[node name="Mirror" type="StaticBody2D" parent="Structures" groups=["structures"]]
+[node name="Mirror" type="StaticBody2D" parent="Structures" unique_id=1822997942 groups=["structures"]]
 position = Vector2(2850, 515)
 script = ExtResource("5_structure")
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Structures/Mirror"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Structures/Mirror" unique_id=1532706959]
 shape = SubResource("RectangleShape2D_target")
 
-[node name="Visual" type="ColorRect" parent="Structures/Mirror"]
+[node name="Visual" type="ColorRect" parent="Structures/Mirror" unique_id=1132882457]
 offset_left = -55.0
 offset_top = -145.0
 offset_right = 55.0
 offset_bottom = 145.0
 color = Color(0.38, 0.62, 0.72, 1)
 
-[node name="Frame" type="ColorRect" parent="Structures/Mirror"]
+[node name="Frame" type="ColorRect" parent="Structures/Mirror" unique_id=899849788]
 offset_left = -72.0
 offset_top = -162.0
 offset_right = 72.0
 offset_bottom = 162.0
 color = Color(0.55, 0.42, 0.18, 1)
 
-[node name="Glass" type="ColorRect" parent="Structures/Mirror"]
+[node name="Glass" type="ColorRect" parent="Structures/Mirror" unique_id=503705962]
 offset_left = -48.0
 offset_top = -132.0
 offset_right = 48.0
 offset_bottom = 116.0
 color = Color(0.5, 0.78, 0.86, 0.92)
 
-[node name="Shine" type="Polygon2D" parent="Structures/Mirror"]
-polygon = PackedVector2Array(-34, -116, -8, -130, 42, 70, 16, 84)
+[node name="Shine" type="Polygon2D" parent="Structures/Mirror" unique_id=1934113337]
 color = Color(0.95, 1, 1, 0.26)
+polygon = PackedVector2Array(-34, -116, -8, -130, 42, 70, 16, 84)
 
-[node name="Base" type="ColorRect" parent="Structures/Mirror"]
+[node name="Base" type="ColorRect" parent="Structures/Mirror" unique_id=924679067]
 offset_left = -46.0
 offset_top = 126.0
 offset_right = 46.0
 offset_bottom = 162.0
 color = Color(0.35, 0.25, 0.12, 1)
 
-[node name="NameLabel" type="Label" parent="Structures/Mirror"]
+[node name="NameLabel" type="Label" parent="Structures/Mirror" unique_id=301021930]
 offset_left = -32.0
 offset_top = -181.0
 offset_right = 70.0
@@ -385,49 +380,49 @@ offset_bottom = -155.0
 theme_override_font_sizes/font_size = 18
 text = "Mirror"
 
-[node name="Wall" type="StaticBody2D" parent="Structures" groups=["structures"]]
+[node name="Wall" type="StaticBody2D" parent="Structures" unique_id=592829282 groups=["structures"]]
 position = Vector2(3500, 500)
 script = ExtResource("5_structure")
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Structures/Wall"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Structures/Wall" unique_id=143867335]
 shape = SubResource("RectangleShape2D_target")
 
-[node name="Visual" type="ColorRect" parent="Structures/Wall"]
+[node name="Visual" type="ColorRect" parent="Structures/Wall" unique_id=1920379351]
 offset_left = -90.0
 offset_top = -160.0
 offset_right = 90.0
 offset_bottom = 160.0
 color = Color(0.39, 0.38, 0.36, 1)
 
-[node name="CrenelA" type="ColorRect" parent="Structures/Wall"]
+[node name="CrenelA" type="ColorRect" parent="Structures/Wall" unique_id=1049551724]
 offset_left = -90.0
 offset_top = -196.0
 offset_right = -48.0
 offset_bottom = -148.0
 color = Color(0.35, 0.34, 0.32, 1)
 
-[node name="CrenelB" type="ColorRect" parent="Structures/Wall"]
+[node name="CrenelB" type="ColorRect" parent="Structures/Wall" unique_id=2016348729]
 offset_left = -20.0
 offset_top = -196.0
 offset_right = 20.0
 offset_bottom = -148.0
 color = Color(0.35, 0.34, 0.32, 1)
 
-[node name="CrenelC" type="ColorRect" parent="Structures/Wall"]
+[node name="CrenelC" type="ColorRect" parent="Structures/Wall" unique_id=963019170]
 offset_left = 48.0
 offset_top = -196.0
 offset_right = 90.0
 offset_bottom = -148.0
 color = Color(0.35, 0.34, 0.32, 1)
 
-[node name="Gate" type="ColorRect" parent="Structures/Wall"]
+[node name="Gate" type="ColorRect" parent="Structures/Wall" unique_id=279305402]
 offset_left = -32.0
 offset_top = 36.0
 offset_right = 32.0
 offset_bottom = 160.0
 color = Color(0.12, 0.09, 0.07, 1)
 
-[node name="NameLabel" type="Label" parent="Structures/Wall"]
+[node name="NameLabel" type="Label" parent="Structures/Wall" unique_id=154447512]
 offset_left = -24.0
 offset_top = -196.0
 offset_right = 70.0
@@ -435,83 +430,83 @@ offset_bottom = -170.0
 theme_override_font_sizes/font_size = 18
 text = "Wall"
 
-[node name="Castle" type="StaticBody2D" parent="Structures" groups=["structures"]]
+[node name="Castle" type="StaticBody2D" parent="Structures" unique_id=1342948343 groups=["structures"]]
 position = Vector2(4500, 470)
 script = ExtResource("5_structure")
 max_integrity = 5
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Structures/Castle"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Structures/Castle" unique_id=1731438550]
 shape = SubResource("RectangleShape2D_target")
 
-[node name="Visual" type="ColorRect" parent="Structures/Castle"]
+[node name="Visual" type="ColorRect" parent="Structures/Castle" unique_id=659329291]
 offset_left = -190.0
 offset_top = -190.0
 offset_right = 190.0
 offset_bottom = 190.0
 color = Color(0.42, 0.39, 0.45, 1)
 
-[node name="Keep" type="ColorRect" parent="Structures/Castle"]
+[node name="Keep" type="ColorRect" parent="Structures/Castle" unique_id=2032039288]
 offset_left = -80.0
 offset_top = -280.0
 offset_right = 80.0
 offset_bottom = 190.0
 color = Color(0.36, 0.34, 0.4, 1)
 
-[node name="LeftTower" type="ColorRect" parent="Structures/Castle"]
+[node name="LeftTower" type="ColorRect" parent="Structures/Castle" unique_id=1488327588]
 offset_left = -230.0
 offset_top = -250.0
 offset_right = -130.0
 offset_bottom = 190.0
 color = Color(0.32, 0.3, 0.36, 1)
 
-[node name="RightTower" type="ColorRect" parent="Structures/Castle"]
+[node name="RightTower" type="ColorRect" parent="Structures/Castle" unique_id=487527531]
 offset_left = 130.0
 offset_top = -250.0
 offset_right = 230.0
 offset_bottom = 190.0
 color = Color(0.32, 0.3, 0.36, 1)
 
-[node name="LeftRoof" type="Polygon2D" parent="Structures/Castle"]
+[node name="LeftRoof" type="Polygon2D" parent="Structures/Castle" unique_id=1026664446]
+color = Color(0.22, 0.12, 0.24, 1)
 polygon = PackedVector2Array(-246, -250, -180, -330, -114, -250)
-color = Color(0.22, 0.12, 0.24, 1)
 
-[node name="RightRoof" type="Polygon2D" parent="Structures/Castle"]
+[node name="RightRoof" type="Polygon2D" parent="Structures/Castle" unique_id=1018709403]
+color = Color(0.22, 0.12, 0.24, 1)
 polygon = PackedVector2Array(114, -250, 180, -330, 246, -250)
-color = Color(0.22, 0.12, 0.24, 1)
 
-[node name="KeepRoof" type="Polygon2D" parent="Structures/Castle"]
-polygon = PackedVector2Array(-100, -280, 0, -370, 100, -280)
+[node name="KeepRoof" type="Polygon2D" parent="Structures/Castle" unique_id=1658738735]
 color = Color(0.26, 0.12, 0.28, 1)
+polygon = PackedVector2Array(-100, -280, 0, -370, 100, -280)
 
-[node name="CastleGate" type="ColorRect" parent="Structures/Castle"]
+[node name="CastleGate" type="ColorRect" parent="Structures/Castle" unique_id=1100020340]
 offset_left = -42.0
 offset_top = 72.0
 offset_right = 42.0
 offset_bottom = 190.0
 color = Color(0.1, 0.08, 0.08, 1)
 
-[node name="WindowA" type="ColorRect" parent="Structures/Castle"]
+[node name="WindowA" type="ColorRect" parent="Structures/Castle" unique_id=607045965]
 offset_left = -184.0
 offset_top = -128.0
 offset_right = -154.0
 offset_bottom = -78.0
 color = Color(0.88, 0.7, 0.22, 1)
 
-[node name="WindowB" type="ColorRect" parent="Structures/Castle"]
+[node name="WindowB" type="ColorRect" parent="Structures/Castle" unique_id=1733291951]
 offset_left = 154.0
 offset_top = -128.0
 offset_right = 184.0
 offset_bottom = -78.0
 color = Color(0.88, 0.7, 0.22, 1)
 
-[node name="WindowC" type="ColorRect" parent="Structures/Castle"]
+[node name="WindowC" type="ColorRect" parent="Structures/Castle" unique_id=680355424]
 offset_left = -18.0
 offset_top = -164.0
 offset_right = 18.0
 offset_bottom = -104.0
 color = Color(0.88, 0.7, 0.22, 1)
 
-[node name="NameLabel" type="Label" parent="Structures/Castle"]
+[node name="NameLabel" type="Label" parent="Structures/Castle" unique_id=2121981370]
 offset_left = -34.0
 offset_top = -226.0
 offset_right = 92.0
@@ -519,24 +514,19 @@ offset_bottom = -200.0
 theme_override_font_sizes/font_size = 18
 text = "Castle"
 
-[node name="Characters" type="Node2D" parent="."]
+[node name="Characters" type="Node2D" parent="." unique_id=487648714]
 
-[node name="WorkerA" parent="Characters" instance=ExtResource("7_walker")]
+[node name="WorkerA" parent="Characters" unique_id=970780553 instance=ExtResource("7_walker")]
 position = Vector2(760, 660)
 left_x = 760.0
-right_x = 2200.0
-label = "Worker"
-body_color = Color(0.22, 0.19, 0.16, 1)
 
-[node name="WorkerB" parent="Characters" instance=ExtResource("7_walker")]
+[node name="WorkerB" parent="Characters" unique_id=1673816890 instance=ExtResource("7_walker")]
 position = Vector2(1180, 660)
 speed = 55.0
 left_x = 900.0
-right_x = 2200.0
-label = "Worker"
 body_color = Color(0.24, 0.22, 0.18, 1)
 
-[node name="ChildA" parent="Characters" instance=ExtResource("7_walker")]
+[node name="ChildA" parent="Characters" unique_id=1849138957 instance=ExtResource("7_walker")]
 position = Vector2(1450, 660)
 speed = 36.0
 left_x = 1320.0
@@ -544,7 +534,7 @@ right_x = 1660.0
 label = "Child"
 body_color = Color(0.58, 0.42, 0.2, 1)
 
-[node name="SoldierA" parent="Characters" instance=ExtResource("7_walker")]
+[node name="SoldierA" parent="Characters" unique_id=1268298352 instance=ExtResource("7_walker")]
 position = Vector2(3360, 660)
 speed = 62.0
 left_x = 3260.0
@@ -553,7 +543,7 @@ label = "Soldier"
 body_color = Color(0.12, 0.16, 0.2, 1)
 head_color = Color(0.48, 0.42, 0.35, 1)
 
-[node name="SoldierB" parent="Characters" instance=ExtResource("7_walker")]
+[node name="SoldierB" parent="Characters" unique_id=2142058997 instance=ExtResource("7_walker")]
 position = Vector2(3820, 660)
 speed = 58.0
 left_x = 3500.0
@@ -562,10 +552,10 @@ label = "Soldier"
 body_color = Color(0.12, 0.16, 0.2, 1)
 head_color = Color(0.48, 0.42, 0.35, 1)
 
-[node name="HUD" type="CanvasLayer" parent="."]
+[node name="HUD" type="CanvasLayer" parent="." unique_id=1774541260]
 script = ExtResource("6_hud")
 
-[node name="AmmoLabel" type="Label" parent="HUD"]
+[node name="AmmoLabel" type="Label" parent="HUD" unique_id=126138962]
 offset_left = 24.0
 offset_top = 18.0
 offset_right = 220.0
@@ -573,7 +563,7 @@ offset_bottom = 48.0
 theme_override_font_sizes/font_size = 24
 text = "Ammo 0/0"
 
-[node name="StatusLabel" type="Label" parent="HUD"]
+[node name="StatusLabel" type="Label" parent="HUD" unique_id=90234315]
 offset_left = 24.0
 offset_top = 54.0
 offset_right = 520.0

@@ -48,6 +48,11 @@ func _apply_damage(amount: int, source_position: Vector2, force_ratio := 1.0) ->
 	_integrity = maxi(0, _integrity - amount)
 	_shake_seconds = 0.16 + force_ratio * 0.18
 	_update_damage_state()
+	EventBus.world_event.emit({
+		"type": "STRUCTURE_DESTROYED" if _integrity == 0 else "STRUCTURE_HIT",
+		"target": str(name), "cause": "knight", "position": source_position,
+		"severity": float(amount) / max_integrity, "narrative_value": 0.7,
+	})
 
 
 func _update_damage_state() -> void:
@@ -55,7 +60,18 @@ func _update_damage_state() -> void:
 
 	if _integrity == 0:
 		visual.color = ruined_color
-		visual.scale = Vector2(0.65, 0.38)
+		visual.scale = Vector2(0.65, 0.18)
+		visual.position.y = 620.0 - global_position.y - visual.size.y * 0.18
+		$CollisionShape2D.set_deferred("disabled", true)
+		for child in get_children():
+			if child is CanvasItem and child != visual and child.name != "NameLabel" and child.name != "Artwork":
+				child.hide()
+		$NameLabel.text = str(name) + " · ruínas"
 	else:
 		visual.color = _original_color.lerp(damaged_color, damage_ratio)
 		visual.scale = _original_scale.lerp(Vector2(0.85, 0.85), damage_ratio)
+
+
+func closest_point(point: Vector2) -> Vector2:
+	var rect := Rect2(global_position + visual.position, visual.size * visual.scale)
+	return Vector2(clampf(point.x, rect.position.x, rect.end.x), clampf(point.y, rect.position.y, rect.end.y))

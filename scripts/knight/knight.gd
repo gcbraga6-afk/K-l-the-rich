@@ -6,12 +6,15 @@ extends Node2D
 @export var aim_touch_radius := 130.0
 @export var min_drag_px := 18.0
 @export var max_drag_px := 340.0
-@export var max_muzzle_speed := 1250.0
+@export var max_muzzle_speed := 3000.0
 @export var trajectory_points := 9
 @export var trajectory_step := 0.08
 
 @onready var cannon_pivot: Node2D = $CannonPivot
 @onready var aim_dots: Node2D = $AimDots
+
+var weapon := "Basic"
+var _drag_anchor := Vector2.ZERO
 
 var _cooldown := 0.0
 var _ammo := 0
@@ -20,6 +23,7 @@ var _is_aiming := false
 var _aim_velocity := Vector2.ZERO
 
 func _ready() -> void:
+	EventBus.intervention_ended.connect(_on_intervention_ended)
 	_ammo = max_ammo
 	aim_dots.visible = false
 	call_deferred("_emit_ammo_changed")
@@ -35,6 +39,7 @@ func _process(delta: float) -> void:
 	_cooldown = maxf(0.0, _cooldown - delta)
 
 	if Input.is_action_just_pressed("fire") and _can_start_aim():
+		_drag_anchor = cannon_pivot.global_position
 		_is_aiming = true
 		aim_dots.visible = true
 
@@ -46,6 +51,9 @@ func _process(delta: float) -> void:
 
 
 func _can_start_aim() -> bool:
+	var camera = get_viewport().get_camera_2d()
+	if camera and camera.has_method("blocks_aim_input") and camera.blocks_aim_input():
+		return false
 	if _cooldown > 0.0 or _ammo <= 0:
 		return false
 
@@ -55,7 +63,7 @@ func _can_start_aim() -> bool:
 
 func _update_drag_aim() -> void:
 	var muzzle_position := _muzzle_global_position()
-	var drag := muzzle_position - get_global_mouse_position()
+	var drag := _drag_anchor - get_global_mouse_position()
 	var distance := drag.length()
 
 	if distance <= 0.001:
@@ -103,20 +111,24 @@ func _release_aim() -> void:
 
 
 func _fire(velocity: Vector2) -> void:
-	if projectile_scene == null or _ammo <= 0:
+	if projectile_scene == null or _ammo <= 0 or not _intervention_active:
 		return
 
 	_ammo -= 1
 	_emit_ammo_changed()
 
+	cannon_pivot.rotation = velocity.angle()
 	var projectile := projectile_scene.instantiate() as RigidBody2D
 	var direction := velocity.normalized()
+	projectile.weapon = weapon
 	projectile.global_position = _muzzle_global_position()
 	projectile.linear_velocity = velocity
 	get_tree().current_scene.add_child(projectile)
 
 	EventBus.emit_projectile_fired({
 		"type": "PROJECTILE_FIRED",
+		"weapon": weapon,
+		"projectile": projectile,
 		"cause": "knight",
 		"position": projectile.global_position,
 		"direction": direction,
@@ -131,9 +143,26 @@ func _fire(velocity: Vector2) -> void:
 
 
 func _muzzle_global_position() -> Vector2:
-	return cannon_pivot.global_position + Vector2.RIGHT.rotated(cannon_pivot.global_rotation) * 76.0
+	return cannon_pivot.global_position + Vector2.RIGHT.rotated(cannon_pivot.global_rotation) * 96.0
 
 
 func _end_intervention(reason: String) -> void:
 	_intervention_active = false
 	EventBus.emit_intervention_ended(reason)
+
+
+func _unhandled_key_input(event: InputEvent) -> void:
+	if not event.is_pressed() or event.is_echo() or not _intervention_active:
+		return
+	if event is InputEventKey:
+		if event.keycode == KEY_1 or event.keycode == KEY_2:
+			weapon = "Basic" if event.keycode == KEY_1 else "Flash"
+			EventBus.weapon_changed.emit(weapon)
+		elif event.keycode == KEY_ESCAPE:
+			_end_intervention("withdrawn")
+
+
+func _on_intervention_ended(_reason: String) -> void:
+	_intervention_active = false
+	_is_aiming = false
+	aim_dots.visible = false
