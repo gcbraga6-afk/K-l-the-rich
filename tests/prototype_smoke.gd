@@ -34,7 +34,7 @@ func run() -> void:
 	assert(physical.pieces.size() == 14, "Explosion must preserve the original physical parts")
 	assert(house.get_node("CollisionShape2D").disabled, "Legacy solid facade must not block the moving pieces")
 	for piece in physical.pieces:
-		assert(not piece.freeze, "Structure must remain physically simulated after damage")
+		assert(piece.has_node("Skin"), "Damage must never swap a piece for a ruined sprite")
 	knight._ammo = 1
 	knight._fire(Vector2(1500, -1500))
 	assert(not knight._intervention_active, "Last shot must end intervention")

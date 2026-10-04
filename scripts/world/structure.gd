@@ -37,16 +37,16 @@ func _on_structure_hit(event: Dictionary) -> void:
 	_apply_damage(1, event.get("position", global_position))
 
 
-func apply_explosion_damage(amount: int, source_position: Vector2, force_ratio := 1.0) -> void:
-	_apply_damage(amount, source_position, force_ratio)
+func apply_explosion_damage(amount: int, source_position: Vector2, force_ratio := 1.0, radius := 155.0, heading := Vector2.ZERO) -> void:
+	_apply_damage(amount, source_position, force_ratio, radius, heading)
 
 
-func _apply_damage(amount: int, source_position: Vector2, force_ratio := 1.0) -> void:
+func _apply_damage(amount: int, source_position: Vector2, force_ratio := 1.0, radius := 155.0, heading := Vector2.ZERO) -> void:
 	var modular = get_node_or_null("PhysicalHouse")
 	if modular == null:
 		modular = get_node_or_null("ModularStructure")
 	if modular != null:
-		modular.damage_near(amount, source_position, force_ratio)
+		modular.damage_near(amount, source_position, force_ratio, radius, heading)
 		return
 	if _integrity <= 0:
 		return

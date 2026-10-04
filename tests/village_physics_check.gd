@@ -20,7 +20,7 @@ func run() -> void:
 	assert(absf(beam.rotation)<0.06,"Roof supports must remain level before a shot")
 	assert(not house._collapsed,"Settlement alone must not destroy a house")
 	for piece in house.pieces:
-		assert(not piece.freeze and piece.has_node("Skin"))
+		assert(not piece.released and piece.has_node("Skin"))
 	await capture("village_physics_before")
 	var roof_y: float = roof.global_position.y
 	var support_start: Vector2 = support.global_position
@@ -28,7 +28,7 @@ func run() -> void:
 	await get_tree().create_timer(1.25).timeout
 	await capture("village_physics_impact")
 	assert(not impacts.is_empty() and impacts[0].target == &"VillageHouse","Real cannon must hit the physical house")
-	assert(get_tree().get_nodes_in_group("active_projectiles").size()==1,"Ball must survive physical contact and transfer momentum")
+	assert(get_tree().get_nodes_in_group("active_projectiles").is_empty(),"The round must detonate on the masonry, not drive through it")
 	await get_tree().create_timer(5).timeout
 	await capture("village_physics_after")
 	var displacement: float = support.global_position.distance_to(support_start)

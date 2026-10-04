@@ -5,6 +5,7 @@ extends Node2D
 @export var lifetime := 0.75
 
 var weapon := "Basic"
+var heading := Vector2.ZERO
 
 @onready var blast: ColorRect = $Blast
 
@@ -39,7 +40,7 @@ func _apply_damage() -> void:
 
 		var falloff := 1.0 - distance / radius
 		var damage := maxi(1, ceili(float(max_damage) * falloff))
-		node.apply_explosion_damage(damage, global_position, falloff)
+		node.apply_explosion_damage(damage, global_position, falloff, radius, heading)
 
 
 func _spawn_debris() -> void:

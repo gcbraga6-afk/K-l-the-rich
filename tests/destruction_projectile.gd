@@ -17,7 +17,7 @@ func run() -> void:
 	await get_tree().create_timer(1.5).timeout
 	assert(physical._hit_reported,"A real projectile must register contact with the roof")
 	assert(house._integrity < house.max_integrity)
-	assert(is_instance_valid(ball),"The cannonball must survive contact with physical masonry")
+	assert(not is_instance_valid(ball),"The round must detonate on the masonry, not drive through it")
 	assert(physical.pieces.size()==14,"Impact must preserve the original physical pieces")
-	print("PASS: real projectile hits the roof, transfers momentum and reports localized damage")
+	print("PASS: real projectile detonates on the roof and reports localized damage")
 	get_tree().quit()

@@ -3,6 +3,7 @@ extends Node2D
 # The lab's load-bearing geometry, built as active bodies at village scale.
 # Art belongs to each body; collapse never swaps the house for a ruined sprite.
 const Piece = preload("res://scripts/physics_lab/physical_piece.gd")
+const Masonry = preload("res://scripts/destruction/masonry.gd")
 const PARTS = preload("res://assets/destruction/cottage_parts.png")
 const SCALE := 225.0 / 340.0
 const RECTS := {
@@ -15,6 +16,7 @@ var pieces: Array[RigidBody2D] = []
 var initial: Dictionary = {}
 var building: StaticBody2D
 var sheet: Texture2D
+var masonry := Masonry.new()
 var _age := 0.0
 var _hit_reported := false
 var _collapsed := false
@@ -49,6 +51,7 @@ func _ready() -> void:
 		for other in get_tree().get_nodes_in_group("structures"):
 			if other is PhysicsBody2D:
 				body.add_collision_exception_with(other)
+	masonry.build(pieces)
 
 func _box(id: String, at: Vector2, size: Vector2, weight: float, material: String) -> RigidBody2D:
 	return _polygon(id,PackedVector2Array([at-size/2,at+Vector2(size.x/2,-size.y/2),at+size/2,at+Vector2(-size.x/2,size.y/2)]),weight,material)
@@ -122,15 +125,11 @@ func _physics_process(delta: float) -> void:
 func _emit(type: String, at: Vector2, severity: float) -> void:
 	EventBus.world_event.emit({"type":type,"target":str(building.name),"cause":"knight","position":at,"severity":severity,"narrative_value":0.7})
 
-func damage_near(_amount: int, source: Vector2, strength: float) -> void:
-	# Nearby explosions apply impulses to existing bodies, never HP-based removal.
+func damage_near(_amount: int, source: Vector2, strength: float, radius := 155.0, heading := Vector2.ZERO) -> void:
+	# The blast spends its energy at the point of impact. Pieces far from it are
+	# untouched, and the collapse that follows comes from the lost support.
 	register_impact(source)
-	for body in pieces:
-		var distance := body.global_position.distance_to(source)
-		if distance < 155:
-			var direction := (body.global_position-source).normalized()
-			body.sleeping = false
-			body.apply_impulse(direction*body.mass*260*strength*(1-distance/155),source-body.global_position)
+	masonry.blast(source, radius, strength, heading)
 
 func closest_point(point: Vector2) -> Vector2:
 	var result := global_position

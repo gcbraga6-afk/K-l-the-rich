@@ -16,7 +16,7 @@ func run() -> void:
 		print("STABILITY ",house.name," collapsed=",physical._collapsed," beam_delta=",beam.position.distance_to(physical.initial["LoadBeam"])," rotation=",beam.rotation)
 		assert(not physical._collapsed,"A house must not collapse without a shot")
 		for body in physical.pieces:
-			assert(not body.freeze)
+			assert(not body.released,"No piece may come loose without a shot")
 			if str(body.name).begins_with("Roof"):
 				print("ROOF ",house.name," ",body.name," drift=",body.position.distance_to(physical.initial[body.name]))
 				assert(body.position.distance_to(physical.initial[body.name])<15,"Unhit roof must retain its original placement")
@@ -62,7 +62,7 @@ func run() -> void:
 	world.add_child(second)
 	await get_tree().create_timer(7).timeout
 	print("HIT SUPPORT ",house.get_node("LeftWall1").position," door=",house.get_node("Door").position)
-	print("HOUSE roof_delta=",roof.position.distance_to(start)," collapsed=",house._collapsed)
+	print("HOUSE roof_delta=",roof.position.distance_to(start)," collapsed=",house._collapsed," integrity=",village.front_houses[2]._integrity,"/",village.front_houses[2].max_integrity)
 	print("TOWER crown_delta=",crown.position.distance_to(crown_start)," collapsed=",tower._tower_fallen)
 	assert(roof.position.distance_to(start)>15,"The original painted roof must move after support impact")
 	assert(tower._tower_fallen,"A physical projectile must dislodge the tower")

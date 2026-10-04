@@ -13,7 +13,8 @@ func run() -> void:
 	assert(absf(beam.position.y-548) < 8,"House must stand under gravity before firing")
 	assert(absf(beam.rotation) < 0.04,"Beam must remain level before impact")
 	for part in lab.pieces:
-		assert(not part.freeze,"Pieces must be real active physics bodies from the start")
+		assert(part is RigidBody2D,"Pieces must be real bodies from the start, not a ruined sprite")
+		assert(not part.released,"Every piece must be standing masonry before the shot")
 	await capture("physical_house_before")
 	var roof_y: float = roof.position.y
 	var baseline: Vector2 = lab.container.get_node("LeftWall1").position
@@ -24,13 +25,20 @@ func run() -> void:
 	await capture("physical_house_after")
 	var displacement: float = lab.container.get_node("LeftWall1").position.distance_to(baseline)
 	print("PHYSICS_RESULT support displacement=",displacement," beam rotation=",beam.rotation," roof drop=",roof.position.y-roof_y)
-	assert(displacement > 50,"Cannonball must physically push the wall out of place")
+	print("STANDING ",lab.masonry.standing(),"/",lab.pieces.size())
+	assert(displacement > 50,"The blast must tear the struck course out of the wall")
+	# The anti-billiards guarantee: energy stays local. Masonry the blast never
+	# reached, and that kept its support, must not have budged at all.
+	for side in range(5):
+		var far: RigidBody2D = lab.container.get_node("RightWall%d" % side)
+		assert(not far.released,"Masonry outside the blast must not come loose")
+		assert(far.position.is_equal_approx(Vector2(1300,776-side*48)),"Untouched masonry must not be shoved aside")
 	assert(absf(beam.rotation) > 0.12 or beam.position.y > 580,"Loss of support must tilt or drop the beam")
 	assert(roof.position.y > roof_y+60,"Roof must fall through gravity after losing support")
 	for part in lab.pieces:
 		assert(absf(part.position.x)<5000 and part.position.y < 900,"Pieces must remain finite and collide with ground")
 	assert(lab.pieces.size() == 13,"No pieces may disappear or be replaced by a ruined sprite")
-	print("PASS: stable physical house, direct momentum transfer, support loss, gravity collapse, persistent bodies")
+	print("PASS: stable house, local blast energy, cratered course ejected, gravity collapse, untouched far wall, persistent bodies")
 	get_tree().quit()
 
 func capture(id: String) -> void:

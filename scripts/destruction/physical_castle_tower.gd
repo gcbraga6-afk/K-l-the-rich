@@ -1,12 +1,21 @@
 extends "res://scripts/destruction/modular_structure.gd"
 
 # Only this tower is converted for now. The remaining keep is a static masonry
-# support and collision surface. Every tower course is active from the start.
+# support and collision surface. Every tower course stands frozen until a blast
+# reaches it or the course below it is gone.
+const Piece = preload("res://scripts/physics_lab/physical_piece.gd")
+const Masonry = preload("res://scripts/destruction/masonry.gd")
+
 var tower_bodies: Array[RigidBody2D] = []
 var initial_poses: Dictionary = {}
+var masonry := Masonry.new()
 var _age := 0.0
 var _tower_fallen := false
 var _impact_reported := false
+
+func _ready() -> void:
+	super._ready()
+	masonry.build(tower_bodies)
 
 func _build_castle() -> void:
 	super._build_castle()
@@ -33,11 +42,10 @@ func _create_visual_and_collision(part: Dictionary) -> void:
 	center /= part.polygon.size()
 	var body := RigidBody2D.new()
 	body.name = part.id
+	body.set_script(Piece)
+	body.show_debug_art = false
 	body.position = origin+center*factor
 	body.mass = 10.0 if part.id=="TowerCrown" else 5.0
-	body.continuous_cd = RigidBody2D.CCD_MODE_CAST_SHAPE
-	body.linear_damp = 0.08
-	body.angular_damp = 0.15
 	body.collision_layer = 16
 	body.collision_mask = 1|8|16
 	body.set_meta("physical_house",self)
@@ -74,13 +82,9 @@ func register_impact(at: Vector2) -> void:
 	_impact_reported = true
 	EventBus.world_event.emit({"type":"STRUCTURE_HIT","target":str(building.name),"part":"torre","cause":"knight","position":at,"severity":0.4,"narrative_value":0.7})
 
-func damage_near(_amount: int, at: Vector2, strength: float) -> void:
+func damage_near(_amount: int, at: Vector2, strength: float, radius := 155.0, heading := Vector2.ZERO) -> void:
 	register_impact(at)
-	for body in tower_bodies:
-		var distance := body.global_position.distance_to(at)
-		if distance<155:
-			body.sleeping = false
-			body.apply_impulse((body.global_position-at).normalized()*body.mass*260*strength*(1-distance/155),at-body.global_position)
+	masonry.blast(at, radius, strength, heading)
 
 func _physics_process(delta: float) -> void:
 	_age += delta

@@ -1,9 +1,12 @@
 extends Node2D
 
 const Piece = preload("res://scripts/physics_lab/physical_piece.gd")
+const Masonry = preload("res://scripts/destruction/masonry.gd")
 const FLOOR_Y := 800.0
 const LAUNCH := Vector2(230,720)
 const GRAVITY := 980.0
+const BLAST_RADIUS := 155.0
+var masonry := Masonry.new()
 var pieces: Array[RigidBody2D] = []
 var projectiles: Array[RigidBody2D] = []
 var container: Node2D
@@ -50,7 +53,7 @@ func _build_house() -> void:
 	pieces.clear()
 	projectiles.clear()
 	shot_count = 0
-	settling = 1.5
+	settling = 0.3
 	for side in range(2):
 		for row in range(5):
 			var name := "%sWall%d" % ["Left" if side == 0 else "Right",row]
@@ -58,6 +61,8 @@ func _build_house() -> void:
 	_box("LoadBeam",Vector2(1180,548),Vector2(340,24),5,Color("b38552"),"wood")
 	_polygon("RoofLeft",PackedVector2Array([Vector2(1010,536),Vector2(1180,402),Vector2(1180,536)]),5,Color("568ba8"),"roof")
 	_polygon("RoofRight",PackedVector2Array([Vector2(1180,402),Vector2(1350,536),Vector2(1180,536)]),5,Color("44738f"),"roof")
+	masonry = Masonry.new()
+	masonry.build(pieces)
 
 func _box(id: String, at: Vector2, size: Vector2, weight: float, color: Color, type: String) -> void:
 	_polygon(id,PackedVector2Array([at-size/2,at+Vector2(size.x/2,-size.y/2),at+size/2,at+Vector2(-size.x/2,size.y/2)]),weight,color,type)
@@ -117,10 +122,21 @@ func fire(velocity: Vector2) -> RigidBody2D:
 	visual.polygon = circle
 	visual.color = Color("edb868")
 	ball.add_child(visual)
+	# The cannonball detonates where it lands instead of shoving the masonry.
+	ball.contact_monitor = true
+	ball.max_contacts_reported = 4
+	ball.body_entered.connect(_on_ball_contact.bind(ball))
 	container.add_child(ball)
 	projectiles.append(ball)
 	shot_count += 1
 	return ball
+
+func _on_ball_contact(body: Node, ball: RigidBody2D) -> void:
+	if not is_instance_valid(ball) or not pieces.has(body):
+		return
+	masonry.blast(ball.global_position, BLAST_RADIUS, 1.0, ball.linear_velocity.normalized())
+	projectiles.erase(ball)
+	ball.queue_free()
 
 func reset_house() -> void:
 	if resetting:
@@ -152,11 +168,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _process(delta: float) -> void:
 	settling = maxf(0,settling-delta)
-	var resting := 0
-	for part in pieces:
-		if is_instance_valid(part) and part.sleeping:
-			resting += 1
-	status.text = "Acomodando as peças…" if settling > 0 else "Tiros: %d · Peças apoiadas: %d/%d" % [shot_count,resting,pieces.size()]
+	status.text = "Acomodando as peças…" if settling > 0 else "Tiros: %d · Peças de pé: %d/%d" % [shot_count,masonry.standing(),pieces.size()]
 	queue_redraw()
 
 func _make_ui() -> void:

@@ -34,6 +34,7 @@ func _ready() -> void:
 		for other in get_tree().get_nodes_in_group("structures"):
 			if other is PhysicsBody2D:
 				body.add_collision_exception_with(other)
+	masonry.build(pieces)
 
 func _region(id: String, region: Rect2, weight: float) -> void:
 	var source := PackedVector2Array([region.position,Vector2(region.end.x,region.position.y),region.end,Vector2(region.position.x,region.end.y)])

@@ -33,9 +33,6 @@ func _ready() -> void:
 
 
 func _on_body_entered(body: Node) -> void:
-	# A surviving cannonball may strike more than one physical building.
-	if weapon == "Basic" and body.has_meta("physical_house"):
-		body.get_meta("physical_house").register_impact(global_position)
 	if _has_impacted:
 		return
 
@@ -50,9 +47,8 @@ func _on_body_entered(body: Node) -> void:
 		"severity": impact_severity,
 		"narrative_value": narrative_value,
 	})
-	if weapon == "Basic" and body.has_meta("physical_house"):
-		# Retain this body: the physics solver transfers the actual momentum.
-		return
+	# The cannonball detonates on contact. Masonry is broken by the blast's local
+	# energy, never by the solver passing the ball's momentum down the building.
 	EventBus.emit_camera_shake_requested(5.0, 0.16)
 
 
@@ -76,6 +72,8 @@ func _spawn_explosion() -> void:
 
 	var explosion := explosion_scene.instantiate() as Node2D
 	explosion.weapon = weapon
+	# The round's own line decides which way the cratered masonry is thrown.
+	explosion.heading = linear_velocity.normalized()
 	explosion.global_position = global_position
 	get_tree().current_scene.add_child(explosion)
 
