@@ -364,36 +364,52 @@ func _build_sprite() -> void:
 
 
 # A room behind the wall, so a hole shows depth instead of the landscape.
+# The room behind the facade: a back wall, a floor and the joists over them, and
+# nothing else. It is always there and always hidden; a breach is what reveals it.
+# Kept plain so one room reads correctly behind any of the twenty cottages, and so
+# replacing it with painted art later changes nothing else.
 func _build_interior() -> void:
-	var room := Image.create(art.get_width(), art.get_height(), false, Image.FORMAT_RGBA8)
-	var height := art.get_height()
-	var width := art.get_width()
-	var dark := Color("241c15")
-	for y in range(height):
-		var depth := float(y) / float(height)
-		# Darker up under the eaves, a shade lighter where the floor catches light.
-		var shade := dark.lightened(0.02 + depth * 0.14)
-		for x in range(width):
+	var w := art.get_width()
+	var h := art.get_height()
+	var room := Image.create(w, h, false, Image.FORMAT_RGBA8)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash(str(art.get_size()) + str(eaves))
+	var dark := Color("231b14")
+	# Deepest up under the eaves, a shade warmer down where the floor catches light.
+	for y in range(h):
+		var shade := dark.lightened(0.01 + float(y) / float(h) * 0.13)
+		for x in range(w):
 			room.set_pixel(x, y, shade)
-	# A floor plane and the joists over it: what makes a breach read as a room with
-	# depth rather than as a flat dark patch.
-	var floor_y := int(height * 0.74)
-	for x in range(width):
-		for y in range(floor_y, height):
-			room.set_pixel(x, y, dark.lightened(0.22 - float(y - floor_y) / float(height) * 0.1))
-		room.set_pixel(x, floor_y, dark.lightened(0.34))
-	for beam in range(7):
-		var bx := int(width * (0.08 + 0.14 * beam))
-		for y in range(int(height * 0.08), int(height * 0.3)):
-			for thickness in range(3):
-				if bx + thickness < width:
-					room.set_pixel(bx + thickness, y, dark.lightened(0.26))
-	for x in range(width):
-		for thickness in range(3):
-			var ry := int(height * 0.3) + thickness
-			if ry < height:
-				room.set_pixel(x, ry, dark.lightened(0.2))
+	var floor_y := int(h * 0.76)
+	var ceiling := int(h * 0.30)
+	# Back wall boards: just enough relief to read as a surface standing behind.
+	for i in range(14):
+		var bx := int(w * (0.04 + 0.068 * i))
+		_fill(room, Rect2i(bx, ceiling, 2, floor_y - ceiling), dark.lightened(0.07))
+	# The floor plane, which is what actually sells depth.
+	_fill(room, Rect2i(0, floor_y, w, h - floor_y), dark.lightened(0.17))
+	_fill(room, Rect2i(0, floor_y, w, 2), dark.lightened(0.30))
+	# Joists over the room, snapped and hanging where the roof came down.
+	_fill(room, Rect2i(0, ceiling, w, 3), dark.lightened(0.20))
+	for i in range(6):
+		var jx := int(w * (0.07 + 0.16 * i))
+		var drop := rng.randi_range(0, int(h * 0.12))
+		_beam(room, Vector2(jx, ceiling), Vector2(jx + rng.randi_range(-14, 14), ceiling + drop + 10), 3, dark.lightened(0.24))
 	_room_texture = ImageTexture.create_from_image(room)
+
+
+func _fill(target: Image, box: Rect2i, colour: Color) -> void:
+	for y in range(maxi(0, box.position.y), mini(target.get_height(), box.end.y)):
+		for x in range(maxi(0, box.position.x), mini(target.get_width(), box.end.x)):
+			target.set_pixel(x, y, colour)
+
+
+# A timber drawn between two points, for joists, table legs and roof members.
+func _beam(target: Image, from: Vector2, to: Vector2, thickness: int, colour: Color) -> void:
+	var steps := int(maxf(from.distance_to(to), 1.0))
+	for i in range(steps + 1):
+		var point := from.lerp(to, float(i) / float(steps))
+		_fill(target, Rect2i(int(point.x) - thickness / 2, int(point.y) - thickness / 2, thickness, thickness), colour)
 
 
 func _to_mask(at: Vector2) -> Vector2:
