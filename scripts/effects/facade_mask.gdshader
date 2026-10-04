@@ -9,6 +9,9 @@ shader_type canvas_item;
 uniform sampler2D mask_tex : filter_nearest, repeat_disable;
 uniform sampler2D room_tex : filter_nearest, repeat_disable;
 uniform vec4 scorch : source_color = vec4(0.16, 0.13, 0.11, 1.0);
+// The painted modules already come lit for a shaded interior, so this only takes
+// the last edge off. Shading them hard turns a breach back into a black hole.
+uniform float room_shade : hint_range(0.2, 1.0) = 0.95;
 
 void fragment() {
 	vec4 base = texture(TEXTURE, UV);
@@ -18,7 +21,7 @@ void fragment() {
 	// between them is scorched and dusted, so the opening reads as broken stone
 	// rather than as a cut in a sheet of paper.
 	vec3 wall = mix(scorch.rgb, base.rgb, smoothstep(0.45, 0.95, keep));
-	vec3 colour = mix(room.rgb, wall, smoothstep(0.12, 0.5, keep));
+	vec3 colour = mix(room.rgb * room_shade, wall, smoothstep(0.12, 0.5, keep));
 	// Alpha comes from the artwork alone, so nothing is ever drawn outside the
 	// house's own outline, hole or no hole.
 	COLOR = vec4(colour, base.a);

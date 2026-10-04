@@ -17,6 +17,15 @@ const MASK_SHADER = preload("res://scripts/effects/facade_mask.gdshader")
 const GROUND_TOL := 10.0   # distance from the footing still counted as standing on it
 const RIM := 3.0           # pixels of scorched edge around every hole
 
+# Painted modules the room is laid up from. Each house draws a different
+# combination, so twenty cottages do not share one interior. Missing files are
+# tolerated: the room falls back to being drawn in code.
+const MODULES := "res://assets/interiors/%s.png"
+const WALLS := ["wall_stone", "wall_plank", "wall_plaster", "wall_brick"]
+const FLOORS := ["floor_plank", "floor_earth"]
+const JOISTS := ["joist_beams", "joist_lath"]
+const LOOSE := ["beam_a", "beam_b", "rubble_a", "rubble_b"]
+
 var art: Image                       # the facade, lifted out of its atlas
 var mask: Image                      # white where the wall still stands
 var mask_texture: ImageTexture
@@ -374,46 +383,91 @@ func _build_sprite() -> void:
 # Painted far lighter than a real room would look from outside in daylight. At
 # this size a physically honest interior is a black hole in the wall and reads as
 # nothing at all; the eye needs the floor and the back wall to actually separate.
+# The room behind the facade: a back wall, a floor and the joists over them.
+# It is always there and always hidden; a breach is what reveals it.
+#
+# Laid up from painted modules, tiled and seeded per house, so no two cottages
+# show the same room and nothing had to be drawn twenty times.
 func _build_interior() -> void:
 	var w := art.get_width()
 	var h := art.get_height()
-	var room := Image.create(w, h, false, Image.FORMAT_RGBA8)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash(str(art.get_size()) + str(eaves))
+	var wall := _module(WALLS[rng.randi() % WALLS.size()])
+	var floor_tile := _module(FLOORS[rng.randi() % FLOORS.size()])
+	var joist := _module(JOISTS[rng.randi() % JOISTS.size()])
+	if wall == null or floor_tile == null or joist == null:
+		_drawn_interior()
+		return
+	var room := Image.create(w, h, false, Image.FORMAT_RGBA8)
+	var floor_y := int(h * 0.80)
+	var ceiling := int(h * 0.34)
+	_tile(room, joist, Rect2i(0, 0, w, ceiling))
+	_tile(room, wall, Rect2i(0, ceiling, w, floor_y - ceiling))
+	_tile(room, floor_tile, Rect2i(0, floor_y, w, h - floor_y))
+	# Broken timber hanging under the ceiling, rubble heaped along the floor.
+	for i in range(rng.randi_range(2, 4)):
+		var beam := _module(LOOSE[rng.randi() % 2])
+		if beam != null:
+			_scatter(room, beam, Vector2i(rng.randi_range(0, w - 1), rng.randi_range(ceiling - 20, ceiling + int(h * 0.18))))
+	for i in range(rng.randi_range(3, 6)):
+		var heap := _module(LOOSE[2 + rng.randi() % 2])
+		if heap != null:
+			_scatter(room, heap, Vector2i(rng.randi_range(0, w - 1), floor_y - rng.randi_range(0, int(h * 0.06))))
+	_room_texture = ImageTexture.create_from_image(room)
+
+
+func _module(name: String) -> Image:
+	var path := MODULES % name
+	if not ResourceLoader.exists(path):
+		return null
+	var texture: Texture2D = load(path)
+	return texture.get_image() if texture != null else null
+
+
+func _tile(target: Image, piece: Image, box: Rect2i) -> void:
+	var step := piece.get_size()
+	# Every other column is mirrored, which breaks up the repeat for nothing. A
+	# straight tiling reads as wallpaper the moment two cells are visible at once.
+	var flipped := piece.duplicate()
+	flipped.flip_x()
+	var column := 0
+	var y := box.position.y
+	while y < box.end.y:
+		var x := box.position.x
+		column = 0
+		while x < box.end.x:
+			var take := Rect2i(Vector2i.ZERO, Vector2i(
+				mini(step.x, box.end.x - x), mini(step.y, box.end.y - y)))
+			target.blit_rect(flipped if column % 2 == 1 else piece, take, Vector2i(x, y))
+			x += step.x
+			column += 1
+		y += step.y
+
+
+# A loose piece dropped at a point, keeping its own transparency.
+func _scatter(target: Image, piece: Image, at: Vector2i) -> void:
+	var size := piece.get_size()
+	target.blend_rect(piece, Rect2i(Vector2i.ZERO, size), at - size / 2)
+
+
+# Used only when the painted modules are missing, so the game never shows a house
+# with nothing behind its walls.
+func _drawn_interior() -> void:
+	var w := art.get_width()
+	var h := art.get_height()
+	var room := Image.create(w, h, false, Image.FORMAT_RGBA8)
 	var wall := Color("584736")
 	var floor_tone := Color("7a6449")
 	var timber := Color("33281d")
-	var roof_space := Color("2e251b")
 	var floor_y := int(h * 0.80)
 	var ceiling := int(h * 0.34)
-	# Roof space above the joists is the darkest part of the house.
 	for y in range(h):
 		for x in range(w):
-			room.set_pixel(x, y, roof_space if y < ceiling else wall)
-	# The back wall, shaded down towards the eaves so it has somewhere to recede to.
-	for y in range(ceiling, floor_y):
-		var depth := float(y - ceiling) / maxf(float(floor_y - ceiling), 1.0)
-		var shade := wall.darkened(0.30 * (1.0 - depth))
-		for x in range(w):
-			room.set_pixel(x, y, shade)
-	# Boards on the back wall, alternating so the surface has a grain to catch.
-	for i in range(13):
-		var bx := int(w * (0.03 + 0.075 * i))
-		_fill(room, Rect2i(bx, ceiling, 3, floor_y - ceiling), wall.darkened(0.22))
-		_fill(room, Rect2i(bx + 3, ceiling, 2, floor_y - ceiling), wall.lightened(0.10))
-	# The floor plane. This is what actually sells depth: a surface going back.
+			room.set_pixel(x, y, Color("2e251b") if y < ceiling else wall)
 	_fill(room, Rect2i(0, floor_y, w, h - floor_y), floor_tone)
 	_fill(room, Rect2i(0, floor_y, w, 3), floor_tone.lightened(0.25))
-	for i in range(9):
-		var fy := floor_y + 4 + i * 4
-		if fy < h:
-			_fill(room, Rect2i(0, fy, w, 1), floor_tone.darkened(0.14))
-	# Joists over the room, snapped and hanging where the roof came down.
 	_fill(room, Rect2i(0, ceiling - 2, w, 5), timber)
-	for i in range(7):
-		var jx := int(w * (0.06 + 0.14 * i))
-		var drop := rng.randi_range(0, int(h * 0.16))
-		_beam(room, Vector2(jx, ceiling), Vector2(jx + rng.randi_range(-18, 18), ceiling + drop + 12), 4, timber)
 	_room_texture = ImageTexture.create_from_image(room)
 
 

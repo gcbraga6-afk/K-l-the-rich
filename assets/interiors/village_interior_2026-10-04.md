@@ -1,0 +1,7 @@
+Interior de vila — 4 de outubro de 2026
+
+Gerado com ImageGen integrado. Referência de estilo: assets/houses/houses_01.png. PNG preservado sem edição. Asset de fundo; ainda não integrado à cena.
+
+Prompt final:
+
+Use case: stylized-concept. Asset: opaque interior background layer behind a destructible medieval village house facade in a side-scrolling 2D game. Reference image is ONLY for matching the painterly pixel-art material style; do not reproduce the exterior houses. Generate ONE empty house interior, straight-on front elevation, rectangular full-bleed image. Upper third: dark roof void with rough wooden rafters, slanted rafters suggesting pitched roof and horizontal support beams. Middle: simple continuous back wall of aged warm-brown wooden planks. Bottom fifth: wooden floor with minimal shallow depth, suitable for a flat side-view game. Only roof beams, back wall and floor. No windows, no doors, no openings, no furniture, no people, no props, no vegetation, no lamps, no text. Dim ambient lighting as if viewing a shaded interior from outdoors on a bright day, but NO visible exterior and NO shafts of sunlight. Warm muted browns, low contrast, restrained detail, no strong highlights or shiny edges, no bright floor. Readable chunky pixel clusters matching the reference's pictorial pixel art, not photorealistic and not smooth 3D. Entire rectangle filled with opaque painted interior, including corners; no transparency, no checkerboard, no margins. Landscape 4:3 composition.
