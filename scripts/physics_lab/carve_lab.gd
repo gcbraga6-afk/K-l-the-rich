@@ -2,6 +2,7 @@ extends Node2D
 
 # Bench for the carved model: a real village facade that rounds tear holes in.
 const Carved = preload("res://scripts/destruction/carved_facade.gd")
+const Shard = preload("res://scripts/destruction/stone_shard.gd")
 const FLOOR_Y := 780.0
 const LAUNCH := Vector2(220, 700)
 const BLAST_RADIUS := 62.0
@@ -56,7 +57,7 @@ func fire(velocity: Vector2) -> RigidBody2D:
 	ball.contact_monitor = true
 	ball.max_contacts_reported = 4
 	ball.collision_layer = 2
-	ball.collision_mask = 1
+	ball.collision_mask = 1 | 8
 	ball.z_as_relative = false
 	ball.z_index = 6
 	var shape := CircleShape2D.new()
@@ -81,6 +82,7 @@ func _on_hit(_body: Node, ball: RigidBody2D) -> void:
 		return
 	ball.set_meta("spent", true)
 	facade.carve(ball.global_position, BLAST_RADIUS)
+	Shard.disturb_all(get_tree(), ball.global_position, BLAST_RADIUS * 1.6, 1.0)
 	ball.queue_free()
 
 func _unhandled_input(event: InputEvent) -> void:

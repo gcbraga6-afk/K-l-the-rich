@@ -22,7 +22,9 @@ void fragment() {
 	// rather than as a cut in a sheet of paper.
 	vec3 wall = mix(scorch.rgb, base.rgb, smoothstep(0.45, 0.95, keep));
 	vec3 colour = mix(room.rgb * room_shade, wall, smoothstep(0.12, 0.5, keep));
-	// Alpha comes from the artwork alone, so nothing is ever drawn outside the
-	// house's own outline, hole or no hole.
-	COLOR = vec4(colour, base.a);
+	// Standing masonry is solid. A breach is only solid where there is a room
+	// behind it: open the roof and you see through to the sky, which is what stops
+	// a destroyed roof reading as a dark shape in the exact outline of the roof.
+	float solid = mix(room.a, 1.0, smoothstep(0.12, 0.5, keep));
+	COLOR = vec4(colour, base.a * solid);
 }

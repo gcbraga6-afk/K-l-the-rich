@@ -21,6 +21,7 @@ var broken := false
 var show_skin := false
 
 var _quiet := 0.0
+var _age := 0.0
 var _peak := 0.0
 var _struck := {}
 var _landed := false
@@ -44,6 +45,15 @@ func _ready() -> void:
 	body_entered.connect(_on_contact)
 
 func _physics_process(delta: float) -> void:
+	_age += delta
+	# Settling, not stopping dead: the piece gets heavier to move the longer it has
+	# been loose, so it slides to a halt instead of twitching forever.
+	linear_damp = 0.3 + _age * 0.9
+	angular_damp = 2.4 + _age * 1.6
+	if _age > 5.0:
+		freeze = true
+		set_physics_process(false)
+		return
 	angular_velocity = clampf(angular_velocity, -4.0, 4.0)
 	var speed := linear_velocity.length()
 	_peak = maxf(_peak * 0.96, speed)
@@ -96,6 +106,9 @@ func _rouse(push: Vector2, energy: float) -> void:
 	freeze = false
 	sleeping = false
 	_quiet = 0.0
+	_age = 0.0
+	linear_damp = 0.3
+	angular_damp = 2.4
 	_landed = false
 	set_physics_process(true)
 	linear_velocity += push

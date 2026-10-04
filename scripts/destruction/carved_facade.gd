@@ -90,6 +90,8 @@ func _carve_now(at: Vector2, radius: float) -> void:
 		return
 	_carved_area += removed
 	_spill(at, radius, removed, taken)
+	# Rubble already lying here is part of what the next round lands in.
+	Shard.disturb_all(get_tree(), at, radius * 1.6, 1.0)
 	_drop_unsupported()
 	_rebuild_collision()
 
@@ -164,13 +166,19 @@ func _punch(centre: Vector2, radius: float) -> Array:
 func _erode(centre: Vector2, radius: float, lift: float, top: int, floor_row := -1) -> Array:
 	var taken := []
 	var bottom: int = mask.get_height() if floor_row < 0 else mini(floor_row, mask.get_height())
+	# Both bounds wander: a bite that stops dead along one row is the horizontal
+	# straight edge that gave the damage its geometric look.
+	var wander := radius * 0.45
 	var reach := radius * 1.5
-	var from_y := maxi(top, int(centre.y - reach * lift))
-	var to_y := mini(bottom, int(centre.y + reach))
+	var from_y := maxi(0, int(minf(float(top) - wander, centre.y - reach * lift)))
+	var to_y := mini(mask.get_height(), int(maxf(float(bottom) + wander, centre.y + reach)))
 	var from_x := maxi(0, int(centre.x - reach))
 	var to_x := mini(mask.get_width(), int(centre.x + reach))
 	for y in range(from_y, to_y):
 		for x in range(from_x, to_x):
+			var sway := (_tear(x, 7) - 0.5) * wander
+			if y < top + sway or y > bottom + sway:
+				continue
 			var dx := (float(x) - centre.x) / radius
 			var dy := (float(y) - centre.y) / radius
 			if dy < 0.0:
@@ -405,6 +413,17 @@ func _build_interior() -> void:
 	_tile(room, joist, Rect2i(0, 0, w, ceiling))
 	_tile(room, wall, Rect2i(0, ceiling, w, floor_y - ceiling))
 	_tile(room, floor_tile, Rect2i(0, floor_y, w, h - floor_y))
+	# Above the ceiling there is no room to see, only roof space and then sky. A
+	# breach up there has to open through, or a lost roof stays on screen as a dark
+	# shape in the exact outline of the roof it replaced.
+	for x in range(w):
+		var edge := ceiling - int((_tear(x, 0) - 0.5) * float(h) * 0.12)
+		for y in range(mini(edge, h)):
+			var pixel := room.get_pixel(x, y)
+			# The joists themselves stay: they are what is left hanging in the gap.
+			var keep_timber: float = clampf((pixel.r + pixel.g + pixel.b) * 1.9 - 0.22, 0.0, 1.0)
+			var depth: float = clampf(float(edge - y) / maxf(float(edge) * 0.55, 1.0), 0.0, 1.0)
+			room.set_pixel(x, y, Color(pixel.r, pixel.g, pixel.b, keep_timber * (1.0 - depth)))
 	# Broken timber hanging under the ceiling, rubble heaped along the floor.
 	for i in range(rng.randi_range(2, 4)):
 		var beam := _module(LOOSE[rng.randi() % 2])
