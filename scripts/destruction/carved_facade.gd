@@ -37,8 +37,22 @@ var _sprite: Sprite2D
 var _room_texture: ImageTexture
 var _art_texture: ImageTexture
 var _tear_seed := 0.0
+# The tearing noise, baked once. Evaluating it with sin() per pixel costs hundreds
+# of thousands of calls per round, which is most of a visible freeze on its own.
+const NOISE_SIZE := 64
+var _noise := PackedFloat32Array()
 var _collider: StaticBody2D
 var _carved_area := 0.0
+# Masonry still standing, kept as a running count and as one image. Recomputing
+# either from scratch means walking a quarter of a million pixels in GDScript, and
+# that is a visible freeze every time a round lands.
+var _solid: Image
+var _standing := 0
+# Worked on as raw bytes. Image.get_pixel and set_pixel are method calls through
+# the binding, and at a quarter of a million of them per round that alone is a
+# visible stutter.
+var _mask_bytes := PackedByteArray()   # one byte per pixel: masonry still there
+var _solid_bytes := PackedByteArray()  # rgba, only the alpha byte is used
 var eaves := 0.0      # mask row where the roof ends and the walls begin
 
 
@@ -52,9 +66,30 @@ func setup(texture: Texture2D, width: float, foot_y: float, structure: Node = nu
 	mask = Image.create(art.get_width(), art.get_height(), false, Image.FORMAT_L8)
 	mask.fill(Color.WHITE)
 	mask_texture = ImageTexture.create_from_image(mask)
+	_solid = Image.create(art.get_width(), art.get_height(), false, Image.FORMAT_RGBA8)
+	var count := art.get_width() * art.get_height()
+	_mask_bytes.resize(count)
+	_solid_bytes.resize(count * 4)
+	_standing = 0
+	for y in range(art.get_height()):
+		for x in range(art.get_width()):
+			var index := y * art.get_width() + x
+			var opaque: bool = art.get_pixel(x, y).a > 0.3
+			_mask_bytes[index] = 255
+			_solid_bytes[index * 4] = 255
+			_solid_bytes[index * 4 + 1] = 255
+			_solid_bytes[index * 4 + 2] = 255
+			_solid_bytes[index * 4 + 3] = 255 if opaque else 0
+			if opaque:
+				_standing += 1
+	_sync_images()
 	eaves = _find_eaves()
 	_art_texture = ImageTexture.create_from_image(art)
 	_tear_seed = float(hash(str(art.get_size())) % 997)
+	_noise.resize(NOISE_SIZE * NOISE_SIZE)
+	for i in range(NOISE_SIZE * NOISE_SIZE):
+		var n: float = sin(float(i % NOISE_SIZE) * 12.9898 + float(i / NOISE_SIZE) * 78.233 + _tear_seed) * 43758.5453
+		_noise[i] = n - floor(n)
 	_build_interior()
 	_build_sprite()
 	_rebuild_collision()
@@ -84,7 +119,7 @@ func _carve_now(at: Vector2, radius: float) -> void:
 		_collapse_roof(centre.x, r)
 	else:
 		taken = _punch(centre, r)
-	mask_texture.update(mask)
+	_sync_images()
 	var removed := before - _standing_pixels()
 	if removed <= 0:
 		return
@@ -169,43 +204,46 @@ func _erode(centre: Vector2, radius: float, lift: float, top: int, floor_row := 
 	# Both bounds wander: a bite that stops dead along one row is the horizontal
 	# straight edge that gave the damage its geometric look.
 	var wander := radius * 0.45
+	var width := mask.get_width()
 	var reach := radius * 1.5
 	var from_y := maxi(0, int(minf(float(top) - wander, centre.y - reach * lift)))
 	var to_y := mini(mask.get_height(), int(maxf(float(bottom) + wander, centre.y + reach)))
 	var from_x := maxi(0, int(centre.x - reach))
 	var to_x := mini(mask.get_width(), int(centre.x + reach))
-	for y in range(from_y, to_y):
-		for x in range(from_x, to_x):
-			var sway := (_tear(x, 7) - 0.5) * wander
-			if y < top + sway or y > bottom + sway:
-				continue
-			var dx := (float(x) - centre.x) / radius
+	for x in range(from_x, to_x):
+		var sway := (_tear(x, 7) - 0.5) * wander
+		var dx := (float(x) - centre.x) / radius
+		var dx2 := dx * dx
+		if dx2 > 2.11:
+			continue
+		var low := maxi(from_y, int(top + sway))
+		var high := mini(to_y, int(bottom + sway))
+		for y in range(low, high):
 			var dy := (float(y) - centre.y) / radius
 			if dy < 0.0:
 				dy /= maxf(lift, 0.001)
-			var t := sqrt(dx * dx + dy * dy)
+			var t := sqrt(dx2 + dy * dy)
 			if t > 1.45:
 				continue
 			var torn := t + _tear(x, y) * 0.5 - 0.22
+			var index := y * width + x
 			if torn <= 1.0:
-				if mask.get_pixel(x, y).r > 0.3 and art.get_pixel(x, y).a > 0.3:
+				if _solid_bytes[index * 4 + 3] > 127:
 					taken.append(Vector2(x, y))
-				mask.set_pixel(x, y, Color.BLACK)
+					_solid_bytes[index * 4 + 3] = 0
+					_standing -= 1
+				_mask_bytes[index] = 0
 			elif torn <= 1.0 + RIM / radius:
-				var keep: float = mask.get_pixel(x, y).r
-				mask.set_pixel(x, y, Color(minf(keep, 0.4), 0, 0))
+				_mask_bytes[index] = mini(_mask_bytes[index], 102)
 	return taken
 
 
 # Two scales of cell noise: the coarse one tears the outline into lumps, the fine
-# one frays its edge pixel by pixel.
+# one frays its edge pixel by pixel. Both read the baked table.
 func _tear(x: int, y: int) -> float:
-	return _cell(x / 9, y / 9, 0.0) * 0.65 + _cell(x / 3, y / 3, 31.0) * 0.35
-
-
-func _cell(cx: int, cy: int, salt: float) -> float:
-	var n: float = sin(float(cx) * 12.9898 + float(cy) * 78.233 + _tear_seed + salt) * 43758.5453
-	return n - floor(n)
+	var coarse: int = ((y / 9) % NOISE_SIZE) * NOISE_SIZE + (x / 9) % NOISE_SIZE
+	var fine: int = ((y / 3 + 17) % NOISE_SIZE) * NOISE_SIZE + (x / 3 + 29) % NOISE_SIZE
+	return _noise[coarse] * 0.65 + _noise[fine] * 0.35
 
 
 # Masonry the hole cut off from the ground is no longer part of the house.
@@ -217,11 +255,18 @@ func _drop_unsupported() -> void:
 		if bottom >= mask.get_height() - GROUND_TOL / pixel:
 			continue
 		_fall(polygon)
-		for point_y in range(mask.get_height()):
-			for point_x in range(mask.get_width()):
+		var box := Rect2(polygon[0], Vector2.ZERO)
+		for point in polygon:
+			box = box.expand(point)
+		for point_y in range(maxi(0, int(box.position.y)), mini(mask.get_height(), int(box.end.y) + 1)):
+			for point_x in range(maxi(0, int(box.position.x)), mini(mask.get_width(), int(box.end.x) + 1)):
 				if Geometry2D.is_point_in_polygon(Vector2(point_x, point_y), polygon):
-					mask.set_pixel(point_x, point_y, Color.BLACK)
-	mask_texture.update(mask)
+					var index := point_y * mask.get_width() + point_x
+					_mask_bytes[index] = 0
+					if _solid_bytes[index * 4 + 3] > 127:
+						_solid_bytes[index * 4 + 3] = 0
+						_standing -= 1
+	_sync_images()
 
 
 func _fall(polygon: PackedVector2Array) -> void:
@@ -325,22 +370,21 @@ func _debris(shape: PackedVector2Array, origin_px: Vector2, velocity: Vector2, c
 
 
 func _standing_pixels() -> int:
-	var total := 0
-	for y in range(mask.get_height()):
-		for x in range(mask.get_width()):
-			if mask.get_pixel(x, y).r > 0.3 and art.get_pixel(x, y).a > 0.3:
-				total += 1
-	return total
+	return _standing
+
+
+func _sync_images() -> void:
+	var w := art.get_width()
+	var h := art.get_height()
+	mask = Image.create_from_data(w, h, false, Image.FORMAT_L8, _mask_bytes)
+	_solid = Image.create_from_data(w, h, false, Image.FORMAT_RGBA8, _solid_bytes)
+	if mask_texture != null:
+		mask_texture.update(mask)
 
 
 func _silhouette() -> Array:
 	var bitmap := BitMap.new()
-	var combined := Image.create(art.get_width(), art.get_height(), false, Image.FORMAT_RGBA8)
-	for y in range(art.get_height()):
-		for x in range(art.get_width()):
-			var solid: bool = mask.get_pixel(x, y).r > 0.3 and art.get_pixel(x, y).a > 0.3
-			combined.set_pixel(x, y, Color(1, 1, 1, 1.0 if solid else 0.0))
-	bitmap.create_from_image_alpha(combined, 0.5)
+	bitmap.create_from_image_alpha(_solid, 0.5)
 	return bitmap.opaque_to_polygons(Rect2i(Vector2i.ZERO, Vector2i(art.get_width(), art.get_height())), 2.0)
 
 
@@ -416,14 +460,17 @@ func _build_interior() -> void:
 	# Above the ceiling there is no room to see, only roof space and then sky. A
 	# breach up there has to open through, or a lost roof stays on screen as a dark
 	# shape in the exact outline of the roof it replaced.
+	var reach := int(float(h) * 0.22)
 	for x in range(w):
 		var edge := ceiling - int((_tear(x, 0) - 0.5) * float(h) * 0.12)
 		for y in range(mini(edge, h)):
 			var pixel := room.get_pixel(x, y)
-			# The joists themselves stay: they are what is left hanging in the gap.
-			var keep_timber: float = clampf((pixel.r + pixel.g + pixel.b) * 1.9 - 0.22, 0.0, 1.0)
-			var depth: float = clampf(float(edge - y) / maxf(float(edge) * 0.55, 1.0), 0.0, 1.0)
-			room.set_pixel(x, y, Color(pixel.r, pixel.g, pixel.b, keep_timber * (1.0 - depth)))
+			# The joists themselves stay, as what is left hanging in the gap. Alpha
+			# here is all or nothing: grading it by brightness turns the module's own
+			# vertical banding into translucent streaks against the sky.
+			var lit: float = (pixel.r + pixel.g + pixel.b) / 3.0
+			var is_timber: bool = lit > 0.17 and y > edge - reach
+			room.set_pixel(x, y, Color(pixel.r, pixel.g, pixel.b, 1.0 if is_timber else 0.0))
 	# Broken timber hanging under the ceiling, rubble heaped along the floor.
 	for i in range(rng.randi_range(2, 4)):
 		var beam := _module(LOOSE[rng.randi() % 2])

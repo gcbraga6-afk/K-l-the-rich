@@ -244,3 +244,32 @@ Consertado no caminho, e isso era o que impedia de jogar:
 Pendência real, documentada por teste vermelho: o telhado não desce mesmo com a
 casa quase toda destruída. `village_physics_check` cobra isso e falha. O teste
 NÃO foi afrouxado para passar: ele documenta o defeito.
+
+### Modelo de recorte, interior modular e desempenho — 2026-10-05
+
+Visual aprovado pelo usuário na bancada `scenes/physics_lab/carve.tscn`.
+
+- Fachada como máscara: a bala rasga buraco e a casa fica de pé. A estrutura de pé
+  nunca vira corpo dinâmico, então o solver não diverge como no modelo de blocos.
+- Telhado e parede falham diferente. A linha do beiral é deduzida da própria arte.
+- Nada sai em linha reta: distância ao impacto mais ruído, com os limites também
+  ondulando. O telhado antes era um retângulo de pixels.
+- Telhado destruído **abre para o céu**, não vira mancha no formato do telhado.
+  O cômodo tem alpha próprio: parede tem cômodo atrás, acima do teto tem céu.
+- Interior montado de 12 módulos pintados (`assets/interiors/`), recortados da
+  prancha gerada pelo ChatGPT. Cada casa sorteia uma combinação; colunas alternadas
+  são espelhadas para a repetição não ler como papel de parede.
+- Escombro carrega a textura de onde quebrou, e assenta: amortecimento cresce com
+  o tempo solto, com prazo final. Tiro novo quebra entulho já caído.
+
+PENDÊNCIA PRINCIPAL — desempenho. Cada tiro custa ~89 ms (era ~170 ms), o que o
+usuário descreve como o jogo pausar antes de explodir. Já feitos: contagem
+incremental em vez de varrer a imagem, ruído pré-calculado em tabela no lugar de
+sin() por pixel, rejeição por distância antes do ruído, e máscara trabalhada como
+PackedByteArray. Restam ~60 ms no recorte e ~29 ms em recolher silhueta e remontar
+colisão. Caminhos não tentados: fazer o recorte em fatias ao longo de alguns
+quadros, reduzir a resolução da máscara, ou mover o laço para um shader.
+
+Outras pendências: o item do mapa de materiais pintado à mão (janela arrebenta
+inteira, parede em volta fica de pé) não foi feito. E nada disso está no jogo
+ainda — só na bancada. As casas do reino seguem no modelo antigo.
