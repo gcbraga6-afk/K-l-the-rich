@@ -26,6 +26,8 @@ var owner_structure: Node = null
 
 var _sprite: Sprite2D
 var _room_texture: ImageTexture
+var _art_texture: ImageTexture
+var _tear_seed := 0.0
 var _collider: StaticBody2D
 var _carved_area := 0.0
 var eaves := 0.0      # mask row where the roof ends and the walls begin
@@ -42,6 +44,8 @@ func setup(texture: Texture2D, width: float, foot_y: float, structure: Node = nu
 	mask.fill(Color.WHITE)
 	mask_texture = ImageTexture.create_from_image(mask)
 	eaves = _find_eaves()
+	_art_texture = ImageTexture.create_from_image(art)
+	_tear_seed = float(hash(str(art.get_size())) % 997)
 	_build_interior()
 	_build_sprite()
 	_rebuild_collision()
@@ -64,18 +68,19 @@ func _carve_now(at: Vector2, radius: float) -> void:
 	var centre := _to_mask(at)
 	var r := maxf(radius / pixel, 3.0)
 	var before := _standing_pixels()
+	var taken := []
 	if centre.y < eaves:
 		# Rafters carry the roof across its whole span. Break them and the span
 		# comes down as a section; it does not keep a tidy round hole punched in it.
 		_collapse_roof(centre.x, r)
 	else:
-		_punch(centre, r)
+		taken = _punch(centre, r)
 	mask_texture.update(mask)
 	var removed := before - _standing_pixels()
 	if removed <= 0:
 		return
 	_carved_area += removed
-	_spill(at, radius, removed)
+	_spill(at, radius, removed, taken)
 	_drop_unsupported()
 	_rebuild_collision()
 
@@ -98,15 +103,9 @@ func _find_eaves() -> float:
 
 # A span of roof loses its rafters and falls in, carrying its tiles with it.
 func _collapse_roof(at_x: float, radius: float) -> void:
-	var half := radius * 1.5
-	var left := int(clampf(at_x - half, 0.0, art.get_width()))
-	var right := int(clampf(at_x + half, 0.0, art.get_width()))
-	var chunks := []
-	for x in range(left, right):
-		for y in range(0, int(eaves)):
-			if mask.get_pixel(x, y).r > 0.3 and art.get_pixel(x, y).a > 0.3:
-				mask.set_pixel(x, y, Color.BLACK)
-				chunks.append(Vector2(x, y))
+	# Reaching well up towards the ridge and bounded below by the eaves, so the span
+	# comes away as roof and the walls underneath are untouched.
+	var chunks := _erode(Vector2(at_x, eaves * 0.86), radius * 1.15, 2.6, 0, int(eaves))
 	if chunks.is_empty():
 		return
 	# The span does not vanish: it drops into the room as real pieces of roof.
@@ -126,7 +125,7 @@ func _collapse_roof(at_x: float, radius: float) -> void:
 			Vector2(-span * 1.8, span * 0.40)])
 		# A roof falls in on itself: the span drops into the room, it does not burst
 		# outwards like something thrown.
-		_debris(slab, base_offset + seed_point * pixel,
+		_debris(slab, seed_point,
 			Vector2(rng.randf_range(-45.0, 45.0), rng.randf_range(30.0, 150.0)),
 			Color("a8603f"), 0.7)
 	var puff := DustPuff.new()
@@ -142,38 +141,54 @@ func standing_ratio() -> float:
 
 
 # A ragged bite, not a clean circle: masonry breaks along its own faults.
-func _punch(centre: Vector2, radius: float) -> void:
-	var rng := RandomNumberGenerator.new()
-	rng.seed = hash("%d:%d:%d" % [int(centre.x), int(centre.y), int(radius)])
-	# The outline is broken up by three harmonics instead of being a circle, so the
-	# breach has the torn, uneven edge that shelled masonry actually leaves.
-	var phase := Vector3(rng.randf_range(0.0, TAU), rng.randf_range(0.0, TAU), rng.randf_range(0.0, TAU))
-	var box := Rect2i(
-		Vector2i(maxi(0, int(centre.x - radius * 1.7)), maxi(0, int(centre.y - radius * 1.7))),
-		Vector2i.ZERO)
-	var far := Vector2i(
-		mini(mask.get_width(), int(centre.x + radius * 1.7)),
-		mini(mask.get_height(), int(centre.y + radius * 1.7)))
-	box.size = far - box.position
-	for y in range(box.position.y, box.end.y):
-		for x in range(box.position.x, box.end.x):
-			var offset := Vector2(x, y) - centre
-			var distance := offset.length()
-			if distance > radius * 1.6:
+func _punch(centre: Vector2, radius: float) -> Array:
+	return _erode(centre, radius, 1.0, int(eaves))
+
+
+# The blast falls off with distance and is torn up by noise, so no edge anywhere
+# is a line: the core goes entirely, the rim comes away speckled and ragged, and
+# nothing past the reach is touched. Returns the pixels it took.
+#
+# `lift` stretches the reach upwards, which is how a roof loses a whole span from
+# one hit while a wall only loses what is near it. `top` and `floor_row` bound the
+# bite to one part of the building.
+func _erode(centre: Vector2, radius: float, lift: float, top: int, floor_row := -1) -> Array:
+	var taken := []
+	var bottom: int = mask.get_height() if floor_row < 0 else mini(floor_row, mask.get_height())
+	var reach := radius * 1.5
+	var from_y := maxi(top, int(centre.y - reach * lift))
+	var to_y := mini(bottom, int(centre.y + reach))
+	var from_x := maxi(0, int(centre.x - reach))
+	var to_x := mini(mask.get_width(), int(centre.x + reach))
+	for y in range(from_y, to_y):
+		for x in range(from_x, to_x):
+			var dx := (float(x) - centre.x) / radius
+			var dy := (float(y) - centre.y) / radius
+			if dy < 0.0:
+				dy /= maxf(lift, 0.001)
+			var t := sqrt(dx * dx + dy * dy)
+			if t > 1.45:
 				continue
-			var angle := offset.angle()
-			if y < eaves:
-				continue
-			var limit: float = radius * (0.74
-				+ 0.17 * sin(angle * 3.0 + phase.x)
-				+ 0.11 * sin(angle * 7.0 + phase.y)
-				+ 0.07 * sin(angle * 13.0 + phase.z))
-			if distance <= limit:
+			var torn := t + _tear(x, y) * 0.5 - 0.22
+			if torn <= 1.0:
+				if mask.get_pixel(x, y).r > 0.3 and art.get_pixel(x, y).a > 0.3:
+					taken.append(Vector2(x, y))
 				mask.set_pixel(x, y, Color.BLACK)
-			elif distance <= limit + RIM:
-				# A dusted, scorched rim, so the opening never reads as a clean cut.
+			elif torn <= 1.0 + RIM / radius:
 				var keep: float = mask.get_pixel(x, y).r
 				mask.set_pixel(x, y, Color(minf(keep, 0.4), 0, 0))
+	return taken
+
+
+# Two scales of cell noise: the coarse one tears the outline into lumps, the fine
+# one frays its edge pixel by pixel.
+func _tear(x: int, y: int) -> float:
+	return _cell(x / 9, y / 9, 0.0) * 0.65 + _cell(x / 3, y / 3, 31.0) * 0.35
+
+
+func _cell(cx: int, cy: int, salt: float) -> float:
+	var n: float = sin(float(cx) * 12.9898 + float(cy) * 78.233 + _tear_seed + salt) * 43758.5453
+	return n - floor(n)
 
 
 # Masonry the hole cut off from the ground is no longer part of the house.
@@ -234,7 +249,7 @@ func _fall(polygon: PackedVector2Array) -> void:
 
 
 # What the wall lost piles up at its foot.
-func _spill(at: Vector2, radius: float, removed: int) -> void:
+func _spill(at: Vector2, radius: float, removed: int, taken: Array) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("%d:%d" % [int(at.x), int(at.y)])
 	var count := clampi(int(removed / 260.0), 3, 10)
@@ -244,35 +259,21 @@ func _spill(at: Vector2, radius: float, removed: int) -> void:
 		for corner in range(5):
 			var angle := TAU * corner / 5.0 + rng.randf_range(-0.3, 0.3)
 			chunk.append(Vector2.RIGHT.rotated(angle) * size * rng.randf_range(0.7, 1.3))
-		var body := RigidBody2D.new()
-		body.set_script(Shard)
-		body.shard = chunk
-		body.generation = 2
-		body.owner_structure = owner_structure
-		body.mass = 1.0
-		body.position = to_local(at) + Vector2(rng.randf_range(-radius, radius) * 0.5, rng.randf_range(-radius, radius) * 0.5)
-		body.collision_layer = 8
-		body.collision_mask = 1 | 8
-		body.z_as_relative = false
-		body.z_index = 5
-		body.tint = Color("9d9280")
-		var collider := CollisionShape2D.new()
-		var convex := ConvexPolygonShape2D.new()
-		convex.points = Geometry2D.convex_hull(chunk)
-		collider.shape = convex
-		body.add_child(collider)
-		add_child(body)
-		# Thrown clear of the wall and down: masonry heaps at the foot, it does not
-		# scatter like kindling.
-		body.linear_velocity = Vector2(rng.randf_range(-150.0, 150.0), rng.randf_range(-260.0, -60.0))
-		body.angular_velocity = rng.randf_range(-2.0, 2.0)
+		# Cut from a spot the blast actually took, so the chunk carries that paint.
+		var from: Vector2 = taken[rng.randi_range(0, taken.size() - 1)] if not taken.is_empty() else _to_mask(at)
+		_debris(chunk, from,
+			Vector2(rng.randf_range(-150.0, 150.0), rng.randf_range(-260.0, -60.0)),
+			Color("9d9280"), 1.0)
 	var puff := DustPuff.new()
 	puff.configure(clampf(float(removed) / 2600.0, 0.5, 1.5), Color("b3a994"))
 	puff.position = to_local(at)
 	add_child(puff)
 
 
-func _debris(shape: PackedVector2Array, where: Vector2, velocity: Vector2, colour: Color, weight: float) -> void:
+# One piece of the building, cut from the facade's own pixels so a tile falls
+# looking like a tile and plaster falls looking like plaster. Flat colour is what
+# made the rubble read as plastic.
+func _debris(shape: PackedVector2Array, origin_px: Vector2, velocity: Vector2, colour: Color, weight: float) -> void:
 	var body := RigidBody2D.new()
 	body.set_script(Shard)
 	body.shard = shape
@@ -280,7 +281,7 @@ func _debris(shape: PackedVector2Array, where: Vector2, velocity: Vector2, colou
 	body.owner_structure = owner_structure
 	body.mass = weight
 	body.tint = colour
-	body.position = where
+	body.position = base_offset + origin_px * pixel
 	body.collision_layer = 8
 	body.collision_mask = 1 | 8
 	body.z_as_relative = false
@@ -290,6 +291,17 @@ func _debris(shape: PackedVector2Array, where: Vector2, velocity: Vector2, colou
 	convex.points = Geometry2D.convex_hull(shape)
 	collider.shape = convex
 	body.add_child(collider)
+	var skin := Polygon2D.new()
+	skin.name = "Skin"
+	skin.polygon = shape
+	var uv := PackedVector2Array()
+	for point in shape:
+		uv.append(origin_px + point / pixel)
+	skin.uv = uv
+	skin.texture = _art_texture
+	skin.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	body.add_child(skin)
+	body.show_skin = true
 	add_child(body)
 	body.linear_velocity = velocity
 	body.angular_velocity = randf_range(-2.0, 2.0)

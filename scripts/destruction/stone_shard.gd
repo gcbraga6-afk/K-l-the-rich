@@ -18,6 +18,7 @@ var tint := Color("9aafbf")
 var shard := PackedVector2Array()
 var generation := 1
 var broken := false
+var show_skin := false
 
 var _quiet := 0.0
 var _peak := 0.0
@@ -148,7 +149,8 @@ func _raise_dust(strength: float) -> void:
 	get_parent().add_child(puff)
 
 func _draw() -> void:
-	if shard.size() < 3:
+	# A piece carrying real paint draws that instead of a flat silhouette.
+	if show_skin or shard.size() < 3:
 		return
 	draw_colored_polygon(shard, tint)
 	var border := shard.duplicate()
