@@ -29,6 +29,7 @@ static func shards(polygon: PackedVector2Array, count: int, focus := Vector2.INF
 	var seeds := _seeds(polygon, count, focus, rng)
 	if seeds.size() < 2:
 		return [polygon]
+	var total := area(polygon)
 	var cells := []
 	for i in seeds.size():
 		var cell := polygon
@@ -38,7 +39,9 @@ static func shards(polygon: PackedVector2Array, count: int, focus := Vector2.INF
 			cell = _half_plane(cell, seeds[i], seeds[j])
 			if cell.size() < 3:
 				break
-		if cell.size() >= 3 and area(cell) > 1.0:
+		# Slivers are poison for the solver: a near degenerate convex shape makes
+		# contact resolution diverge and bodies fly off to absurd coordinates.
+		if cell.size() >= 3 and area(cell) >= maxf(6.0, total * 0.04) and thickness(cell) >= 3.0:
 			cells.append(cell)
 	return cells if cells.size() > 1 else [polygon]
 
@@ -153,6 +156,15 @@ static func seeded(polygon: PackedVector2Array) -> RandomNumberGenerator:
 	var middle := centroid(polygon)
 	rng.seed = hash("%d:%d:%d" % [int(snappedf(middle.x, 0.5) * 2.0), int(snappedf(middle.y, 0.5) * 2.0), int(area(polygon))])
 	return rng
+
+
+# Shortest side of the bounding box: a cheap stand-in for how sliver-like a shape
+# is, and enough to keep degenerate stones out of the simulation.
+static func thickness(polygon: PackedVector2Array) -> float:
+	var bounds := Rect2(polygon[0], Vector2.ZERO)
+	for point in polygon:
+		bounds = bounds.expand(point)
+	return minf(bounds.size.x, bounds.size.y)
 
 
 static func area(polygon: PackedVector2Array) -> float:

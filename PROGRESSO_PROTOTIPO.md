@@ -209,3 +209,38 @@ Pendências e problemas conhecidos:
   face partida.
 - Só o laboratório e as casas da frente/torre usam o sistema. Comércio, fábricas,
   casas nobres e o restante do castelo seguem pendentes.
+
+### Peças irregulares — tentada e desligada — 2026-10-04
+
+Objetivo: resolver o bloco que fica encravado no ar, trocando as 14 peças
+retangulares por pedras irregulares desde a criação.
+
+Implementado e funcionando: corte de Voronoi das regiões autoradas, com a fatia
+certa da fachada pintada em cada pedra; grafo de apoio reescrito para achar
+vizinho por contato, não por fiada alinhada (forma irregular não alinha);
+API de regiões (`region`, `region_centre`) para que colapso seja julgado por
+grupo, e nenhuma peça individual precise sobreviver à intervenção.
+
+**Desligado.** Com as regiões divididas, o solver de contato 2D do Godot diverge:
+posições chegam a 1e15 e além em segundos depois do primeiro impacto. Tentativas
+que não resolveram: descartar lascas abaixo de área mínima, descartar lascas
+finas (menor lado do retângulo envolvente), e subdividir só regiões grandes
+deixando fiadas pequenas inteiras. `_stone_count` e `count` agora retornam 1; a
+API de regiões ficou, então religar é uma linha quando a estabilidade for
+resolvida.
+
+Caminhos prováveis, não testados: dar faces irregulares às peças no tamanho atual
+(em vez de pedras menores), ou trocar o backend de física por Rapier 2D, que
+existe como GDExtension e é recomendado justamente para muitos corpos.
+
+Consertado no caminho, e isso era o que impedia de jogar:
+- A bala que caía curto perguntava a um `Array[RigidBody2D]` se o chão estava
+  nele. Erro do motor, e o editor para o jogo rodando.
+- Quatro lugares assumiam que peça não morre. O pior lia o nome da coroa da torre
+  destruída a cada quadro. Eram 297 erros em 8 tiros; agora são zero.
+- Realimentação de entulho: lasca acertando casa disparava estouro que remexia
+  entulho, gerando mais impactos sem fim. Dano de destroço não remexe mais.
+
+Pendência real, documentada por teste vermelho: o telhado não desce mesmo com a
+casa quase toda destruída. `village_physics_check` cobra isso e falha. O teste
+NÃO foi afrouxado para passar: ele documenta o defeito.
