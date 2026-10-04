@@ -1,6 +1,10 @@
 extends CharacterBody2D
 
 @export var speed := 70.0
+var social_group := "Workers"
+var social_alarm := 0.0
+@export var patrol_pause := 0.0
+var patrol_wait := 0.0
 @export var left_x := 800.0
 @export var right_x := 2200.0
 @export var label := "Worker"
@@ -24,6 +28,10 @@ var _direction := 1.0
 
 func _ready() -> void:
 	add_to_group("people")
+	if label == "Soldier":
+		social_group = "Soldiers"
+	elif label == "King":
+		social_group = "Nobility"
 	global_position.y = 620.0
 	collision_layer = 2
 	collision_mask = 0
@@ -36,8 +44,13 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
+	social_alarm = maxf(0, social_alarm - delta)
 	fear_seconds = maxf(0.0, fear_seconds - delta)
-	disorganized_seconds = maxf(0.0, disorganized_seconds - delta)
+	var recovery := 1.0
+	var society = get_parent().get_parent().get_node_or_null("Society")
+	if label == "Soldier" and society != null:
+		recovery = 0.4 + 0.6 * society.cohesion / 85.0
+	disorganized_seconds = maxf(0.0, disorganized_seconds - delta * recovery)
 	name_label.text = label
 	if disorganized_seconds > 0.0:
 		name_label.text += " · desorganizado"
@@ -47,6 +60,9 @@ func _physics_process(delta: float) -> void:
 		velocity.x = _flee_direction * speed * 1.8
 	elif not routine_sites.is_empty():
 		_follow_routine(delta)
+	elif patrol_wait > 0.0:
+		patrol_wait = maxf(0.0, patrol_wait - delta)
+		velocity.x = 0.0
 	else:
 		velocity.x = _direction * speed
 	body.color = body_color.lerp(Color(0.8, 0.7, 0.4), 0.55) if disorganized_seconds > 0.0 else body_color
@@ -54,10 +70,12 @@ func _physics_process(delta: float) -> void:
 	global_position.y = preload("res://scripts/world/terraces.gd").walking_y(global_position.x)
 	global_position.x = clampf(global_position.x, 400.0, 6800.0)
 
-	if global_position.x >= right_x:
+	if global_position.x >= right_x and _direction > 0:
 		_direction = -1.0
-	elif global_position.x <= left_x:
+		patrol_wait = patrol_pause
+	elif global_position.x <= left_x and _direction < 0:
 		_direction = 1.0
+		patrol_wait = patrol_pause
 
 	name_label.visible = fear_seconds > 0.0 or disorganized_seconds > 0.0
 	body.scale.x = _direction

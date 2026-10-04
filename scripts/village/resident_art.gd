@@ -1,43 +1,57 @@
 extends Node2D
 
+const SHEET = preload("res://assets/characters/people_walk.png")
 var person: CharacterBody2D
-var time := 0.0
+var sprite: Sprite2D
+var frames: Array = []
+var elapsed := 0.0
+var facing := 1.0
 
 func _ready() -> void:
 	person = get_parent()
 	person.get_node("Body").hide()
 	person.get_node("Head").hide()
+	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	var rows: Array = JSON.parse_string(FileAccess.get_file_as_string("res://assets/characters/people_walk.json"))
+	var row := 2 if person.label == "Soldier" else (3 if person.label == "King" else person.get_index() % 2)
+	# Keep one guard identity and equipment throughout the walk.
+	var boxes: Array = [rows[row][1], rows[row][3], rows[row][1], rows[row][3]] if row == 2 else rows[row]
+	for box in boxes:
+		var texture := AtlasTexture.new()
+		texture.atlas = SHEET
+		texture.region = Rect2(box[0], box[1], box[2], box[3])
+		texture.filter_clip = true
+		frames.append(texture)
+	sprite = Sprite2D.new()
+	sprite.centered = false
+	add_child(sprite)
+	_update_frame(0)
 
 func _process(delta: float) -> void:
-	time += delta
+	if sprite == null:
+		return
+	var walking: bool = absf(person.velocity.x) > 1.0
+	if walking:
+		facing = signf(person.velocity.x)
+		elapsed += delta * (1.7 if person.fear_seconds > 0 else 1.0)
+	else:
+		elapsed = 0.0
+	_update_frame(int(elapsed * 7.0) % 4 if walking else 1)
+	# A clear visual cue for flash stun, without moving the whole person off the ground.
+	sprite.modulate = Color("fff1ae") if person.disorganized_seconds > 0 else Color.WHITE
 	queue_redraw()
 
+func _update_frame(index: int) -> void:
+	sprite.texture = frames[index]
+	var height := 92.0 if person.label == "Soldier" else 80.0
+	if person.label == "King":
+		height = 88.0
+	var factor: float = height / sprite.texture.get_height()
+	sprite.scale = Vector2(factor * facing, factor)
+	sprite.position = Vector2(-sprite.texture.get_width() * factor * facing / 2, -height)
+
 func _draw() -> void:
-	if person == null:
-		return
-	var stride := sin(time*10) * 4.0 if absf(person.velocity.x) > 1.0 else 0.0
-	var cloth: Color = person.body_color
-	var skin: Color = person.head_color
-	var soldier: bool = person.label == "Soldier"
-	draw_rect(Rect2(-10,-3,21,4),Color(0.12,0.14,0.12,0.35))
-	draw_rect(Rect2(-7+stride,-19,6,18),Color("3d3935"))
-	draw_rect(Rect2(2-stride,-19,6,18),Color("484237"))
-	draw_rect(Rect2(-9+stride,-4,9,4),Color("292c2b"))
-	draw_rect(Rect2(1-stride,-4,10,4),Color("292c2b"))
-	draw_rect(Rect2(-9,-42,19,25),cloth)
-	draw_rect(Rect2(-9,-23,19,4),Color("655038"))
-	draw_rect(Rect2(-13,-38,5,21),cloth.darkened(0.15))
-	draw_rect(Rect2(10,-38,5,21),cloth.darkened(0.15))
-	draw_rect(Rect2(-13,-20,5,6),skin)
-	draw_rect(Rect2(10,-20,5,6),skin)
-	draw_rect(Rect2(-6,-57,14,15),skin)
-	draw_rect(Rect2(-7,-60,16,7),Color("68543b"))
-	draw_rect(Rect2(3 if person.velocity.x >= 0 else -5,-51,2,2),Color("292d2e"))
-	if soldier:
-		draw_rect(Rect2(-9,-61,20,8),Color("849295"))
-		if person.disorganized_seconds <= 0:
-			draw_line(Vector2(19,-3),Vector2(19,-65),Color("816345"),3)
-			draw_colored_polygon(PackedVector2Array([Vector2(14,-64),Vector2(19,-76),Vector2(24,-64)]),Color("aab4af"))
-	else:
-		draw_rect(Rect2(-10,-59,23,4),Color("a18a58"))
-		draw_rect(Rect2(-5,-65,14,7),Color("b29a63"))
+	if person != null and person.disorganized_seconds > 0:
+		for i in range(3):
+			var angle := Time.get_ticks_msec() * 0.004 + i * TAU / 3
+			draw_circle(Vector2(cos(angle) * 15, -100 + sin(angle) * 4), 2.5, Color("ffe488"))

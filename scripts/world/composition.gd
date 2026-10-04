@@ -10,6 +10,7 @@ var world: Node2D
 func _ready() -> void:
 	world = get_parent()
 	world.get_node("WorldBounds/Ground").collision_layer = 0
+	world.get_node("WorldBounds/Ground").collision_mask = 0
 	var terrain := Node2D.new()
 	terrain.name = "Terraces"
 	terrain.set_script(preload("res://scripts/world/terraces.gd"))

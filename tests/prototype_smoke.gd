@@ -23,16 +23,18 @@ func run() -> void:
 	soldier.react_to_blast(soldier.global_position, "Flash")
 	assert(soldier.disorganized_seconds > 0.0, "Flash must disorganize soldiers")
 	soldier._physics_process(8.0)
-	assert(soldier.disorganized_seconds == 0.0, "Soldiers must recover")
+	assert(soldier.disorganized_seconds > 0.0, "Shaken cohesion must delay recovery")
+	soldier._physics_process(20.0)
+	assert(soldier.disorganized_seconds == 0.0, "Soldiers must eventually recover")
 	var basic = blast_scene.instantiate()
 	basic.position = house.global_position + Vector2(150, 0)
 	world.add_child(basic)
 	assert(house._integrity < house.max_integrity, "Explosion must measure distance to building surface")
-	house.apply_explosion_damage(10, house.global_position)
-	await get_tree().physics_frame
-	await get_tree().process_frame
-	assert(house.get_node("CollisionShape2D").disabled, "Ruins must not block shots")
-	assert(not house.get_node("Roof").visible, "Ruins must hide intact roof")
+	var physical = house.get_node("PhysicalHouse")
+	assert(physical.pieces.size() == 14, "Explosion must preserve the original physical parts")
+	assert(house.get_node("CollisionShape2D").disabled, "Legacy solid facade must not block the moving pieces")
+	for piece in physical.pieces:
+		assert(not piece.freeze, "Structure must remain physically simulated after damage")
 	knight._ammo = 1
 	knight._fire(Vector2(1500, -1500))
 	assert(not knight._intervention_active, "Last shot must end intervention")

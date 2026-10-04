@@ -42,6 +42,12 @@ func apply_explosion_damage(amount: int, source_position: Vector2, force_ratio :
 
 
 func _apply_damage(amount: int, source_position: Vector2, force_ratio := 1.0) -> void:
+	var modular = get_node_or_null("PhysicalHouse")
+	if modular == null:
+		modular = get_node_or_null("ModularStructure")
+	if modular != null:
+		modular.damage_near(amount, source_position, force_ratio)
+		return
 	if _integrity <= 0:
 		return
 
@@ -73,5 +79,10 @@ func _update_damage_state() -> void:
 
 
 func closest_point(point: Vector2) -> Vector2:
+	var modular = get_node_or_null("PhysicalHouse")
+	if modular == null:
+		modular = get_node_or_null("ModularStructure")
+	if modular != null:
+		return modular.closest_point(point)
 	var rect := Rect2(global_position + visual.position, visual.size * visual.scale)
 	return Vector2(clampf(point.x, rect.position.x, rect.end.x), clampf(point.y, rect.position.y, rect.end.y))

@@ -1,0 +1,7 @@
+# Espelho público aprovado
+
+Asset: propaganda_mirror.png; regiões de atlas: propaganda_mirror.json. Gerado com image_gen nativo. Referência: concept V2 e sua versão em perspectiva 3/4 voltada à esquerda. Implementado com largura 340 perto do castelo, tela vazia, colunas finas. Nenhuma inversão adicional em runtime. A transmissão de mensagens ainda não está implementada.
+
+## Prompt final
+
+Edit this exact game asset. Maintain the current three-quarter perspective facing LEFT toward the village: right exterior side visible, right screen edge closer/larger. Make the two wooden supporting columns MUCH THINNER, about one third their current thickness. Enlarge the blank blue-gray display area to occupy almost all the available width and most of the height: screen is the dominant element for reading broadcast messages. Reduce the large upper ornamental crown assembly to a modest narrow decorative strip with a small central royal crest and small red flag. Keep refined aged gold medieval trim and dark timber but remove bulky finials and hanging ornaments competing with the screen. Lower and simplify the stone plinth to two broad shallow steps. Preserve charming detailed painterly pixel art, real material textures, warm light. Screen stays opaque and completely blank without writing or imagery. Preserve TRUE TRANSPARENT background and cutout holes. Entire asset visible, no people, no text, no scenery. A practical royal public broadcasting screen for a game, legibility first, medieval fairy tale styling second.

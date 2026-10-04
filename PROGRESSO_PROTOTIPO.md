@@ -126,3 +126,43 @@ Este pedido substitui explicitamente a exigência anterior de zoom sempre travad
 
 ## Marco aprovado pelo usuário
 Cenário e dinâmica de tiro aprovados em 3 de outubro de 2026. Estado solicitado para commit antes da próxima etapa de desenvolvimento do jogo: janela Full HD, câmera suave com afastamento discreto nos tiros longos, retorno por clique, vila/indústria/nobreza e castelo sobre terreno próprio, camadas de parallax restauradas.
+
+## 2026-10-03 — personagens e corte implementados
+- Checkpoint aprovado 3c77300 enviado ao GitHub/main.
+- Novos sprites transparentes de aldeão, aldeã, soldados e rei, seguindo people.png; animações em atlas, orientação pela caminhada e corrida quando assustados.
+- Mantidas rotinas entre casas e comércios, desorganização dos soldados com Flash; acrescentadas patrulhas na indústria e no castelo.
+- Rei passeia e faz pausas no platô, junto do espelho real; espelho possui colisão, dano e estilhaços. A quebra assusta o rei se estiver próximo.
+- Assets e prompts em assets/characters/README.md. Novas alterações locais posteriores ao checkpoint enviado.
+- Validados royal_court_check, prototype_smoke, village_integration, composition_check e camera_traversal; previews do jogo atualizados.
+- Cenário e dinâmica de câmera/tiro aprovados preservados. Ainda não há sistema de vitória ou combate de soldados nesta etapa.
+
+### Correção do Espelho — modelo de propaganda aprovado
+O espelho doméstico foi substituído pelo painel público de propaganda: perspectiva 3/4 voltada à vila/cavaleiro, colunas finas, tela ampla vazia, base de pedra. Largura 340 no mesmo platô próximo ao castelo. PNG transparente em assets/characters/propaganda_mirror.png; colisão e destruição preservadas. Renderização conferida e royal_court_check passou. Sistema de mensagens/PROPAGANDA/LIVE permanece pendente; esta alteração implementa o modelo visual solicitado.
+
+## 2026-10-03 — primeira ligação social e propaganda
+Consultados diretamente no GitHub GAME_DESIGN.md e PROTOTYPE_01.md (main). Implementada uma primeira fatia dos milestones 5/6:
+- Testemunhas a até 600 unidades reagem a dano, registram alarme, medo e Frenesi; civis próximos fogem. Dano sem testemunhas não altera essas variáveis globais.
+- Prestígio do Rei separado por grupo no modelo; grupos ativos atualmente Workers, Soldiers e King/Nobility. Bourgeoisie ainda não tem população própria. Não há Prestígio do Cavaleiro.
+- Flash reduz coesão e torna a recuperação dos guardas mais lenta; há recuperação gradual. Deserção, repressão e Motim ainda pendentes. Frenesi ainda é uma variável inicial, sem revolta coletiva implementada.
+- Espelho exibe texto em perspectiva sobre o vidro aprovado, reage a casas, estruturas e guardas atingidos. Fila limitada, mensagens iguais agrupadas, duração de 12 segundos. Ruína interrompe a transmissão.
+- Propaganda afeta modestamente o Prestígio dos grupos presentes no raio de 800; experiência recente de perigo reduz credibilidade. Slogan padrão não acumula Prestígio.
+- HUD resume população e guardas; tecla M enquadra o Espelho. Mecânica de tiro/câmera preservada.
+- Testes: propaganda_check (inclui dano sem testemunhas, mensagens, deduplicação, silêncio após ruína), prototype_smoke atualizado para recuperação dependente da coesão, royal_court_check, village_integration, camera_traversal. Renderização da tela conferida.
+Próximas partes: completar respostas sociais e ciclo diário; depois Pigeon com marcação, pouso dormente, CONNECT/LIVE, expulsão e cooldown. Nenhum sistema de LIVE/canais/gravação foi introduzido nesta etapa. Persistência entre sessões ainda não implementada.
+
+### Casa física integrada à vila — 2026-10-03
+
+- A primeira casa à direita do canhão usa a geometria de apoio do laboratório aprovado, com escala uniforme e arte própria para pedra, viga e telhado; porta independente mais leve.
+- São 14 corpos presentes desde o início. O projétil Basic transmite momento por colisão e permanece no mundo após atingir essa casa. Não há explosão, tremor ou troca por sprite de ruína nesse impacto.
+- A perda real de suporte/rotação da viga informa o colapso aos moradores e à propaganda. Explosões próximas aplicam impulso às peças existentes.
+- Demais casas e castelo ainda não foram convertidos para esse novo sistema. O laboratório original permanece disponível em `scenes/physics_lab/house.tscn`.
+- Verificação: estabilidade antes do tiro; disparo do canhão real; queda do telhado por gravidade; destroços persistentes e apoiados no terreno; evento social de colapso. Disparo longo até o castelo preservado.
+
+### Ampliação da destruição física — 2026-10-04
+
+- As oito casas da primeira camada agora têm corpos físicos desde a criação do cenário. As sete casas adicionais preservam seus desenhos originais, aplicados às peças móveis; telhados têm contornos de colisão e apoio nas vigas.
+- A torre alta da esquerda do castelo agora tem sete peças físicas empilhadas. Impactos deslocam a alvenaria e a cobertura; o restante do castelo permanece como apoio estático. A perda da torre registra dano parcial, não a destruição do castelo inteiro.
+- A bala pode registrar impactos em mais de uma construção durante seu percurso. Flash usa um detector separado e não empurra as peças.
+- Corrigida a colisão residual do chão antigo invisível, que interceptava tiros baixos acima do terreno atual.
+- Validação: estabilidade das oito casas e da torre antes do impacto; deslocamento de telhado; dois impactos na torre com destroços persistentes; disparo real na primeira casa; disparo longo; Flash sem dano estrutural; câmera e reações básicas.
+- Escopo restante: casas de fundo são decorativas; comércio, fábricas, casas nobres e o restante do castelo ainda precisam de conversão para o novo sistema físico.

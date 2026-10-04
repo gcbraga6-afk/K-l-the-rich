@@ -7,6 +7,7 @@ var ammo := 8
 var maximum := 8
 var history: Array[String] = []
 var event_label: Label
+var social_label: Label
 
 func _ready() -> void:
 	EventBus.ammo_changed.connect(_on_ammo_changed)
@@ -34,7 +35,7 @@ func _ready() -> void:
 	help.add_theme_color_override("font_shadow_color", Color.BLACK)
 	help.add_theme_constant_override("shadow_offset_x", 2)
 	help.add_theme_constant_override("shadow_offset_y", 2)
-	help.text = "Arraste para trás junto ao canhão e solte para disparar\nApós disparar, clique para voltar ao cavaleiro · A/D: lados · W/S: altura   Home: canhão   V: vila   1: Basic   2: Flash   Esc: retirar-se"
+	help.text = "Arraste para trás junto ao canhão e solte para disparar\nApós disparar, clique para voltar ao cavaleiro · A/D: lados · W/S: altura   Home: canhão   V: vila   M: espelho   1: Basic   2: Flash   Esc: retirar-se"
 	help.add_theme_font_size_override("font_size", 18)
 	add_child(help)
 	event_label = Label.new()
@@ -44,6 +45,21 @@ func _ready() -> void:
 	event_label.add_theme_constant_override("shadow_offset_y", 2)
 	event_label.add_theme_font_size_override("font_size", 16)
 	add_child(event_label)
+	social_label = Label.new()
+	social_label.position = Vector2(710, 20)
+	social_label.add_theme_font_size_override("font_size", 18)
+	social_label.add_theme_color_override("font_shadow_color", Color.BLACK)
+	social_label.add_theme_constant_override("shadow_offset_x", 2)
+	social_label.add_theme_constant_override("shadow_offset_y", 2)
+	add_child(social_label)
+
+func _process(_delta: float) -> void:
+	var society = get_parent().get_node_or_null("Society")
+	if society == null or social_label == null:
+		return
+	var mood := "tranquila" if society.fear < 5 else ("apreensiva" if society.fear < 25 else "assustada")
+	var guards := "organizados" if society.cohesion > 60 else ("abalados" if society.cohesion > 30 else "desorganizados")
+	social_label.text = "População: %s · Guardas: %s" % [mood, guards]
 
 func _on_ammo_changed(current: int, total: int) -> void:
 	ammo = current
@@ -59,6 +75,12 @@ func _on_intervention_ended(reason: String) -> void:
 	status_label.text = "Sem munição. O Reino continua — observe as consequências." if reason == "ammo_empty" else "Você se retirou. O Reino continua."
 
 func _on_world_event(event: Dictionary) -> void:
+	if event.get("type") == "PROPAGANDA_BROADCAST":
+		history.push_front("Espelho: " + event.get("message", ""))
+		if history.size() > 5:
+			history.pop_back()
+		event_label.text = "\n".join(history)
+		return
 	var descriptions := {
 		"WORKPLACE_CLOSED": "fechou; moradores procuram outro destino",
 		"STRUCTURE_HIT": "foi atingido",

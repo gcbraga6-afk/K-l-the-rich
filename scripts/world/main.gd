@@ -1,6 +1,7 @@
 extends Node2D
 
 func _ready() -> void:
+	Engine.physics_ticks_per_second = 120
 	DisplayServer.window_set_title("K**l the Rich — 1920 × 1080 · câmera suave")
 	_expand_kingdom()
 	$Backdrop.hide()
@@ -29,6 +30,28 @@ func _ready() -> void:
 	composition.name = "Composition"
 	composition.set_script(preload("res://scripts/world/composition.gd"))
 	add_child(composition)
+	var court := Node2D.new()
+	court.name = "RoyalCourt"
+	court.set_script(preload("res://scripts/world/royal_court.gd"))
+	add_child(court)
+	for house in village.front_houses:
+		var physical_house := Node2D.new()
+		physical_house.name = "PhysicalHouse"
+		physical_house.set_script(preload("res://scripts/destruction/physical_house.gd") if house.name == "VillageHouse" else preload("res://scripts/destruction/physical_village_house.gd"))
+		house.add_child(physical_house)
+	var tower := Node2D.new()
+	tower.name = "ModularStructure"
+	tower.set_script(preload("res://scripts/destruction/physical_castle_tower.gd"))
+	tower.kind = "castle"
+	$Structures/Castle.add_child(tower)
+	var society := Node.new()
+	society.name = "Society"
+	society.set_script(preload("res://scripts/systems/kingdom_society.gd"))
+	add_child(society)
+	var broadcast := Node2D.new()
+	broadcast.name = "Broadcast"
+	broadcast.set_script(preload("res://scripts/systems/mirror_broadcast.gd"))
+	$Structures/Mirror.add_child(broadcast)
 
 	EventBus.projectile_fired.connect(_on_projectile_fired)
 	EventBus.projectile_impacted.connect(_on_projectile_impacted)

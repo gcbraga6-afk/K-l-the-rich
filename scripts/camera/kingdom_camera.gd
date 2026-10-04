@@ -88,12 +88,12 @@ func _unhandled_key_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed:
 		if event.keycode == KEY_HOME:
 			return_to_knight()
-		elif event.keycode == KEY_V:
+		elif event.keycode == KEY_V or event.keycode == KEY_M:
 			_follow_target = null
 			_returning = false
 			zoom = Vector2.ONE
 			_update_horizontal_limits()
-			position = Vector2(clampf(1500,min_x,max_x),_rest_y)
+			position = Vector2(clampf(5570 if event.keycode == KEY_M else 1500,min_x,max_x),_rest_y)
 
 func _on_projectile_fired(event: Dictionary) -> void:
 	_follow_target = event.get("projectile") as Node2D
