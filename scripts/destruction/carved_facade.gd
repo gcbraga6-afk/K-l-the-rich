@@ -48,7 +48,17 @@ func setup(texture: Texture2D, width: float, foot_y: float, structure: Node = nu
 
 
 # The round takes a bite out of the wall where it lands.
+#
+# Deferred as a whole: this is called from a collision callback, and rebuilding
+# the collision shapes or adding bodies while the physics server is flushing its
+# queries raises an engine error. The editor halts the running game on one.
 func carve(at: Vector2, radius: float) -> void:
+	if mask == null:
+		return
+	_carve_now.call_deferred(at, radius)
+
+
+func _carve_now(at: Vector2, radius: float) -> void:
 	if mask == null:
 		return
 	var centre := _to_mask(at)
