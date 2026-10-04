@@ -8,10 +8,16 @@ extends RigidBody2D
 # throw rubble into the house next door.
 
 const DustPuff = preload("res://scripts/destruction/dust_puff.gd")
+const Fracture = preload("res://scripts/destruction/fracture.gd")
+
+const MAX_GENERATION := 2       # how many times stone may be broken down again
+const MIN_SHATTER_AREA := 260.0 # below this a shard is gravel: it scatters, never splits
 
 var owner_structure: Node = null
 var tint := Color("9aafbf")
 var shard := PackedVector2Array()
+var generation := 1
+var broken := false
 
 var _quiet := 0.0
 var _peak := 0.0
@@ -20,11 +26,14 @@ var _landed := false
 
 func _ready() -> void:
 	add_to_group("stone_shards")
-	continuous_cd = RigidBody2D.CCD_MODE_CAST_SHAPE
+	# Shards are small, slow and numerous. Shape-cast CCD on hundreds of them
+	# costs far more than the tunnelling it would prevent, and a shard that never
+	# sleeps keeps the solver busy long after it has come to rest.
+	continuous_cd = RigidBody2D.CCD_MODE_DISABLED
 	freeze_mode = RigidBody2D.FREEZE_MODE_STATIC
 	linear_damp = 0.3
 	angular_damp = 2.4
-	can_sleep = false
+	can_sleep = true
 	contact_monitor = true
 	max_contacts_reported = 4
 	var stone := PhysicsMaterial.new()
@@ -53,7 +62,74 @@ func _physics_process(delta: float) -> void:
 	if global_position.y > 2200.0:
 		queue_free()
 
+# Rubble is not scenery: a round landing in it wakes it, moves it, knocks dust
+# off it and breaks it down further.
+static func disturb_all(tree: SceneTree, center: Vector2, radius: float, strength: float) -> int:
+	var touched := 0
+	for node in tree.get_nodes_in_group("stone_shards"):
+		var piece := node as RigidBody2D
+		if not is_instance_valid(piece) or piece.broken:
+			continue
+		var distance := piece.global_position.distance_to(center)
+		if distance > radius:
+			continue
+		piece.disturb(center, pow(1.0 - distance / radius, 2.0) * strength)
+		touched += 1
+	return touched
+
+func disturb(center: Vector2, energy: float) -> void:
+	if broken:
+		return
+	var away := global_position - center
+	if away.length() < 1.0:
+		away = Vector2.UP
+	away = away.normalized()
+	if generation < MAX_GENERATION and energy > 0.3 and Fracture.area(shard) > MIN_SHATTER_AREA:
+		_break(away * 300.0 * energy, to_local(center))
+		return
+	# Too small or too far to split: it is thrown and sheds dust instead. The
+	# physics server is only touched once its query flush is over.
+	_rouse.call_deferred(away * 260.0 * energy, energy)
+
+func _rouse(push: Vector2, energy: float) -> void:
+	freeze = false
+	sleeping = false
+	_quiet = 0.0
+	_landed = false
+	set_physics_process(true)
+	linear_velocity += push
+	angular_velocity = clampf(angular_velocity + energy * 3.0, -4.0, 4.0)
+	_raise_dust(clampf(energy, 0.25, 1.0))
+
+func _break(extra: Vector2, focus_local: Vector2) -> void:
+	broken = true
+	_split.call_deferred(extra, focus_local)
+
+func _split(extra: Vector2, focus_local: Vector2) -> void:
+	var made: int = Fracture.scatter(get_parent(), self, {
+		"polygon": shard,
+		"count": 5,
+		"focus": focus_local,
+		"inherited": linear_velocity + extra,
+		"mass": mass,
+		"tint": tint,
+		"structure": owner_structure,
+		"generation": generation + 1,
+		"skin": get_node_or_null("Skin"),
+	})
+	var puff := DustPuff.new()
+	puff.configure(0.7, tint)
+	puff.global_position = to_global(focus_local)
+	get_parent().add_child(puff)
+	if made == 0:
+		broken = false
+		return
+	queue_free()
+
 func _on_contact(body: Node) -> void:
+	if not broken and _peak >= 430.0 and generation < MAX_GENERATION and Fracture.area(shard) > MIN_SHATTER_AREA:
+		# Stone that slams into something breaks down rather than bouncing off.
+		_break(Vector2.ZERO, Vector2.ZERO)
 	if _peak < 170.0:
 		return
 	var hit = body.get_meta("structure_owner") if body.has_meta("structure_owner") else null
@@ -63,7 +139,7 @@ func _on_contact(body: Node) -> void:
 		return
 	_struck[hit.get_instance_id()] = true
 	# Flying rubble is a real cause of damage, not just decoration.
-	hit.call_deferred("apply_explosion_damage", 1 if _peak < 520.0 else 2, global_position, 0.5)
+	hit.call_deferred("apply_explosion_damage", 1 if _peak < 520.0 else 2, global_position, 0.5, 90.0, Vector2.ZERO, false)
 
 func _raise_dust(strength: float) -> void:
 	var puff := DustPuff.new()

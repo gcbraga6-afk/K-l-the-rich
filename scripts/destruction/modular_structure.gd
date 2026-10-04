@@ -137,7 +137,7 @@ func closest_point(point: Vector2) -> Vector2:
 					best = world
 	return best
 
-func damage_near(amount: int, source: Vector2, force_ratio: float, _radius := 155.0, _heading := Vector2.ZERO) -> void:
+func damage_near(amount: int, source: Vector2, force_ratio: float, _radius := 155.0, _heading := Vector2.ZERO, _cascade := true) -> void:
 	var selected := -1
 	var distance := INF
 	var local := (to_local(source)-origin)/factor

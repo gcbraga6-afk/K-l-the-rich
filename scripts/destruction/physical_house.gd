@@ -125,11 +125,11 @@ func _physics_process(delta: float) -> void:
 func _emit(type: String, at: Vector2, severity: float) -> void:
 	EventBus.world_event.emit({"type":type,"target":str(building.name),"cause":"knight","position":at,"severity":severity,"narrative_value":0.7})
 
-func damage_near(_amount: int, source: Vector2, strength: float, radius := 155.0, heading := Vector2.ZERO) -> void:
+func damage_near(_amount: int, source: Vector2, strength: float, radius := 155.0, heading := Vector2.ZERO, cascade := true) -> void:
 	# The blast spends its energy at the point of impact. Pieces far from it are
 	# untouched, and the collapse that follows comes from the lost support.
 	register_impact(source)
-	masonry.blast(source, radius, strength, heading)
+	masonry.blast(source, radius, strength, heading, cascade)
 
 func closest_point(point: Vector2) -> Vector2:
 	var result := global_position

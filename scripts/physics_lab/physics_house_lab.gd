@@ -134,15 +134,21 @@ func fire(velocity: Vector2) -> RigidBody2D:
 	return ball
 
 func _on_ball_contact(body: Node, ball: RigidBody2D) -> void:
-	if not is_instance_valid(ball) or not pieces.has(body):
+	# Rubble counts as a target too: a round landing in a pile has to break it up.
+	# queue_free is deferred, so without this guard the same round reports every
+	# body it touches in the flush and detonates several times over.
+	if not is_instance_valid(ball) or ball.has_meta("spent"):
 		return
+	if not pieces.has(body) and not body.is_in_group("stone_shards"):
+		return
+	ball.set_meta("spent", true)
 	masonry.blast(ball.global_position, BLAST_RADIUS, 1.0, ball.linear_velocity.normalized())
 	projectiles.erase(ball)
 	ball.queue_free()
 
 func set_fracture(enabled: bool) -> void:
 	fracture_mode = enabled
-	masonry.fracture = enabled
+	masonry.set_fracture(enabled)
 
 func reset_house() -> void:
 	if resetting:

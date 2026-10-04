@@ -82,9 +82,9 @@ func register_impact(at: Vector2) -> void:
 	_impact_reported = true
 	EventBus.world_event.emit({"type":"STRUCTURE_HIT","target":str(building.name),"part":"torre","cause":"knight","position":at,"severity":0.4,"narrative_value":0.7})
 
-func damage_near(_amount: int, at: Vector2, strength: float, radius := 155.0, heading := Vector2.ZERO) -> void:
+func damage_near(_amount: int, at: Vector2, strength: float, radius := 155.0, heading := Vector2.ZERO, cascade := true) -> void:
 	register_impact(at)
-	masonry.blast(at, radius, strength, heading)
+	masonry.blast(at, radius, strength, heading, cascade)
 
 func _physics_process(delta: float) -> void:
 	_age += delta

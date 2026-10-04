@@ -1,5 +1,7 @@
 extends RefCounted
 
+const Shard = preload("res://scripts/destruction/stone_shard.gd")
+
 # Local-energy masonry model, shared by every building made of physical pieces.
 #
 # Stone does not hand a cannonball's momentum to the whole building. The blast
@@ -57,14 +59,24 @@ func build(bodies: Array[RigidBody2D]) -> void:
 			if absf(other_rect.position.y - rect.end.y) <= JOINT_TOL:
 				below.append(other)
 		supporters[id] = below
+		body.allow_fracture = fracture
 	_anchor_unreachable()
 
 
-func blast(center: Vector2, radius: float, strength: float, heading := Vector2.ZERO) -> int:
+func set_fracture(enabled: bool) -> void:
+	fracture = enabled
+	for body in pieces:
+		if is_instance_valid(body):
+			body.allow_fracture = enabled
+
+# cascade=false is for damage caused by flying rubble. Such a hit may still break
+# standing masonry, but it must not stir the rubble again: rubble that knocks
+# rubble loose feeds back on itself and the pile accelerates without end.
+func blast(center: Vector2, radius: float, strength: float, heading := Vector2.ZERO, cascade := true) -> int:
 	var core := radius * CORE_RATIO
 	var freed := 0
 	for body in pieces:
-		if not is_instance_valid(body) or body.released:
+		if not is_instance_valid(body):
 			continue
 		var id := body.get_instance_id()
 		var points: PackedVector2Array = shape[id]
@@ -77,6 +89,13 @@ func blast(center: Vector2, radius: float, strength: float, heading := Vector2.Z
 		if distance > radius:
 			continue
 		var energy := pow(1.0 - distance / radius, 2.0) * strength
+		if body.released:
+			if not cascade:
+				continue
+			# Rubble from an earlier round is still stone. It gets moved, dusted and
+			# broken down further rather than standing there as scenery.
+			body.disturb(center, energy, _throw(body, center, near, energy, heading))
+			continue
 		if distance <= core:
 			_free(body, center, near, energy, true, heading)
 			freed += 1
@@ -90,6 +109,9 @@ func blast(center: Vector2, radius: float, strength: float, heading := Vector2.Z
 			_free(body, center, near, maxf(energy * 0.5, 0.25), true, heading)
 			freed += 1
 	settle()
+	# Loose shards lying around are part of the scene the blast acts on.
+	if cascade and pieces.size() > 0 and is_instance_valid(pieces[0]) and pieces[0].is_inside_tree():
+		Shard.disturb_all(pieces[0].get_tree(), center, radius, strength)
 	return freed
 
 
@@ -117,26 +139,27 @@ func standing() -> int:
 	return result
 
 
-func _free(body: RigidBody2D, center: Vector2, near_local: Vector2, energy: float, cratered: bool, heading: Vector2) -> void:
-	var contact := body.to_global(near_local)
-	# Radially away from the blast, so the hole is actually vacated. The contact
-	# point only sets the lever arm, never the direction.
+func _throw(body: RigidBody2D, center: Vector2, near_local: Vector2, energy: float, heading: Vector2) -> Vector2:
+	return _direction(body, center, heading) * NUDGE_IMPULSE * energy
+
+func _direction(body: RigidBody2D, center: Vector2, heading: Vector2) -> Vector2:
 	var radial := body.global_position - center
 	if radial.length() < 1.0:
 		radial = Vector2.UP
 	var direction := radial.normalized()
 	if heading != Vector2.ZERO:
-		# A cannon round punches the masonry through along its own line. Pure
-		# radial ejection would send the course above up and the one below down,
-		# and the column would only jam against itself.
 		direction = (direction * RADIAL_SHARE + heading.normalized() * (1.0 - RADIAL_SHARE)).normalized()
-	# Spall leaves a crater upwards and sideways. A steeply falling round would
-	# otherwise drive the whole course straight down into ground it cannot enter,
-	# and the wall would take the hit without ever opening up.
 	if direction.y > MAX_DOWNWARD:
 		direction = Vector2(direction.x, MAX_DOWNWARD).normalized()
 		if absf(direction.x) < 0.2:
 			direction = Vector2(signf(radial.x) if radial.x != 0.0 else 1.0, MAX_DOWNWARD).normalized()
+	return direction
+
+func _free(body: RigidBody2D, center: Vector2, near_local: Vector2, energy: float, cratered: bool, heading: Vector2) -> void:
+	var contact := body.to_global(near_local)
+	# Away from the blast, biased along the round's own line, and never driven
+	# down into ground it cannot enter. The contact point only sets the lever arm.
+	var direction := _direction(body, center, heading)
 	# Inside the crater the material is pulverised and carried off whatever it
 	# weighs. Beyond it the blast only hands over momentum, so heavy stone
 	# barely shifts while a light roof panel is thrown clear.

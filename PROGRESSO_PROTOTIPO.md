@@ -166,3 +166,46 @@ Próximas partes: completar respostas sociais e ciclo diário; depois Pigeon com
 - Corrigida a colisão residual do chão antigo invisível, que interceptava tiros baixos acima do terreno atual.
 - Validação: estabilidade das oito casas e da torre antes do impacto; deslocamento de telhado; dois impactos na torre com destroços persistentes; disparo real na primeira casa; disparo longo; Flash sem dano estrutural; câmera e reações básicas.
 - Escopo restante: casas de fundo são decorativas; comércio, fábricas, casas nobres e o restante do castelo ainda precisam de conversão para o novo sistema físico.
+
+### Destruição por energia local e fratura sob demanda — 2026-10-04
+
+Substitui a transferência de momento pelo solver, que o usuário rejeitou por
+parecer sinuca. A bala agora detona no contato.
+
+- Energia local: a peça dentro do núcleo do estouro é arrancada; fora dele a
+  tensão acumula entre tiros até a fiada ceder; além do raio nada acontece.
+  Direção radial misturada com a linha do tiro, e nunca para dentro do chão.
+- Grafo de apoio montado da geometria autorada. Alvenaria intocada fica
+  congelada como colisão estática, e entulho assentado volta a ser cenário.
+  O desabamento vem da gravidade, não do empurrão da bala.
+- Fratura sob demanda (`fracture.gd`): a peça com energia suficiente é trocada
+  por lascas de Voronoi cortadas do próprio polígono de colisão, cada uma
+  carregando a fatia da fachada pintada. Semente derivada da geometria, então a
+  quebra é reproduzível. Teto de 160 lascas vivas e no máximo 2 gerações.
+- Alvenaria que desaba de altura quebra ao aterrissar; entulho atingido acorda,
+  é empurrado, solta poeira e quebra de novo. Lasca rápida danifica a construção
+  que acertar, então destroços atingem casas vizinhas.
+- Poeira desenhada à mão (`dust_puff.gd`), sem textura nem addon.
+
+Decisão de design aprovada pelo usuário: **um tiro abre um buraco e deixa a casa
+de pé cedendo**; só tiros repetidos a derrubam. O modelo anterior achatava a casa
+inteira num tiro.
+
+Avaliação visual: o usuário aprovou a fratura no laboratório ("está muito
+melhor"), comparando com o modo de peças inteiras pela tecla F.
+
+Pendências e problemas conhecidos:
+- `village_physics_check` e `destruction_check` estão vermelhos. Não é apenas
+  expectativa antiga: existe um travamento real de corpo. Com a coluna esquerda
+  removida, a peça do topo fica encravada entre a viga e a porta, acumulando
+  velocidade (mais de 1600 px/s) sem se deslocar. A tentativa de fazer pedra
+  encravada ceder não resolveu o caso. É o artefato de blocos grandes e retos
+  (lascas irregulares travam, caixas deslizam ou encravam).
+- Realimentação de entulho foi encontrada e cortada: lasca que acertava casa
+  disparava estouro que remexia entulho, gerando mais impactos. Dano causado por
+  destroços agora não remexe entulho (`cascade=false`).
+- Itens não feitos: peças originais continuam 14 por casa (retângulos), massa das
+  peças não foi reequilibrada, e falta cascalho espirrando e miolo de pedra na
+  face partida.
+- Só o laboratório e as casas da frente/torre usam o sistema. Comércio, fábricas,
+  casas nobres e o restante do castelo seguem pendentes.

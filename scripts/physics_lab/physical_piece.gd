@@ -11,10 +11,18 @@ var start_position := Vector2.ZERO
 var show_debug_art := true
 var released := false
 var shattered := false
+var allow_fracture := true
+
+# A one-course sink reaches about 300 px/s; a real collapse from roof height
+# well over 600. Above this, stone that lands has to break rather than survive.
+const IMPACT_SHATTER_SPEED := 380.0
 
 var _quiet := 0.0
 var _pending_impulse := Vector2.ZERO
 var _pending_offset := Vector2.ZERO
+var _peak := 0.0
+var _jam := 0.0
+var _jam_from := Vector2.ZERO
 
 func _ready() -> void:
 	continuous_cd = RigidBody2D.CCD_MODE_CAST_SHAPE
@@ -55,53 +63,49 @@ func _shatter(impulse: Vector2, focus_local: Vector2, count: int) -> void:
 	if polygon.size() < 3:
 		queue_free()
 		return
-	var parts: Array = Fracture.shards(polygon, count, focus_local)
-	var total := maxf(Fracture.area(polygon), 0.001)
-	var inherited := impulse / maxf(mass, 0.001)
-	var skin := get_node_or_null("Skin")
-	var host := get_parent()
-	var structure = get_meta("structure_owner") if has_meta("structure_owner") else null
-	var rng := RandomNumberGenerator.new()
-	for part in parts:
-		var middle: Vector2 = Fracture.centroid(part)
-		var local := PackedVector2Array()
-		for point in part:
-			local.append(point - middle)
-		var hull := Geometry2D.convex_hull(local)
-		if hull.size() > 1 and hull[0].is_equal_approx(hull[hull.size() - 1]):
-			hull.remove_at(hull.size() - 1)
-		if hull.size() < 3:
-			continue
-		var body := RigidBody2D.new()
-		body.set_script(Shard)
-		body.shard = hull
-		body.tint = tint
-		body.owner_structure = structure
-		body.mass = maxf(mass * Fracture.area(part) / total, 0.05)
-		body.global_position = to_global(middle)
-		body.global_rotation = global_rotation
-		body.collision_layer = 8
-		body.collision_mask = 1 | 8 | 16
-		var collider := CollisionShape2D.new()
-		var convex := ConvexPolygonShape2D.new()
-		convex.points = hull
-		collider.shape = convex
-		body.add_child(collider)
-		# Each shard keeps the painted facade it came from, so breaking a wall
-		# never turns it into flat grey blocks.
-		var painted := _paint(skin, part, middle)
-		if painted != null:
-			body.add_child(painted)
-		host.add_child(body)
-		# Spread around the inherited velocity, so the shards fan out from the hit.
-		var away := (middle - focus_local).normalized() if middle.distance_to(focus_local) > 1.0 else Vector2.UP
-		body.linear_velocity = inherited + away * rng.randf_range(40.0, 150.0)
-		body.angular_velocity = rng.randf_range(-2.5, 2.5)
+	var made: int = Fracture.scatter(get_parent(), self, {
+		"polygon": polygon,
+		"count": count,
+		"focus": focus_local,
+		"inherited": linear_velocity + impulse / maxf(mass, 0.001),
+		"mass": mass,
+		"tint": tint,
+		"structure": get_meta("structure_owner") if has_meta("structure_owner") else null,
+		"generation": 1,
+		"skin": get_node_or_null("Skin"),
+	})
 	var puff := DustPuff.new()
-	puff.configure(clampf(inherited.length() / 420.0, 0.4, 1.4), tint)
+	puff.configure(clampf(impulse.length() / (maxf(mass, 0.001) * 420.0), 0.4, 1.4), tint)
 	puff.global_position = to_global(focus_local)
-	host.add_child(puff)
+	get_parent().add_child(puff)
+	if made == 0:
+		shattered = false
+		released = true
+		_wake.call_deferred()
+		return
 	queue_free()
+
+# Rubble this piece already became is not scenery. A round landing in it wakes it,
+# moves it, knocks dust off it and breaks it down further.
+func disturb(center: Vector2, energy: float, impulse: Vector2) -> void:
+	if shattered:
+		return
+	if allow_fracture and energy >= 0.3:
+		shatter(impulse, to_local(center), 6)
+		return
+	# Adds to whatever is already pending, and only touches the physics server
+	# once the query flush is over.
+	_pending_impulse += impulse
+	_pending_offset = Vector2.ZERO
+	_quiet = 0.0
+	_wake.call_deferred()
+	_dust.call_deferred(center, clampf(energy, 0.25, 1.0))
+
+func _dust(at: Vector2, strength: float) -> void:
+	var puff := DustPuff.new()
+	puff.configure(strength, tint)
+	puff.global_position = at
+	get_parent().add_child(puff)
 
 func _collision_polygon() -> PackedVector2Array:
 	for child in get_children():
@@ -110,38 +114,6 @@ func _collision_polygon() -> PackedVector2Array:
 		if child is CollisionPolygon2D:
 			return (child as CollisionPolygon2D).polygon
 	return outline
-
-# Maps a shard back onto the facade's texture, reusing the affine relation the
-# original skin already carries between its polygon and its uv.
-func _paint(skin: Node, part: PackedVector2Array, middle: Vector2) -> Polygon2D:
-	if skin == null or not (skin is Polygon2D):
-		return null
-	var source := skin as Polygon2D
-	if source.texture == null or source.uv.size() < 3 or source.polygon.size() < 3:
-		return null
-	var p := source.polygon
-	var u := source.uv
-	var e1 := p[1] - p[0]
-	var e2 := p[2] - p[0]
-	var det := e1.x * e2.y - e1.y * e2.x
-	if absf(det) < 0.0001:
-		return null
-	var f1 := u[1] - u[0]
-	var f2 := u[2] - u[0]
-	var shard_polygon := PackedVector2Array()
-	var shard_uv := PackedVector2Array()
-	for point in part:
-		var d := point - p[0]
-		var a := (d.x * e2.y - d.y * e2.x) / det
-		var b := (e1.x * d.y - e1.y * d.x) / det
-		shard_polygon.append(point - middle)
-		shard_uv.append(u[0] + f1 * a + f2 * b)
-	var node := Polygon2D.new()
-	node.polygon = shard_polygon
-	node.uv = shard_uv
-	node.texture = source.texture
-	node.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	return node
 
 func _wake() -> void:
 	freeze = false
@@ -160,9 +132,37 @@ func _integrate_forces(state: PhysicsDirectBodyState2D) -> void:
 	if _pending_impulse != Vector2.ZERO:
 		state.apply_impulse(_pending_impulse, _pending_offset)
 		_pending_impulse = Vector2.ZERO
+		# Sleeping was only held off so this impulse could land.
+		can_sleep = true
+	if not released or shattered or not allow_fracture:
+		return
+	_peak = maxf(_peak * 0.97, state.linear_velocity.length())
+	# Masonry that comes down from a height breaks where it lands. Without this a
+	# roof survives the whole collapse as one slab and drops neatly into place.
+	if _peak >= IMPACT_SHATTER_SPEED and state.get_contact_count() > 0:
+		shatter(Vector2.ZERO, state.get_contact_local_position(0), 7)
 
 func _physics_process(delta: float) -> void:
 	angular_velocity = clampf(angular_velocity, -3.0, 3.0)
+	# A block wedged between its neighbours stops moving while the solver keeps
+	# feeding it gravity, so its velocity climbs without the body going anywhere.
+	# Stone under that much load gives way: it breaks instead of staying stuck.
+	if linear_velocity.length() > 520.0 and get_contact_count() > 0:
+		if position.distance_to(_jam_from) < 2.5:
+			_jam += delta
+			if _jam > 0.4:
+				_jam = 0.0
+				if allow_fracture and not shattered:
+					shatter(Vector2.ZERO, Vector2.ZERO, 6)
+				else:
+					linear_velocity = Vector2.ZERO
+				return
+		else:
+			_jam = 0.0
+			_jam_from = position
+	else:
+		_jam = 0.0
+		_jam_from = position
 	if get_contact_count() > 0 and linear_velocity.length() < 14.0 and absf(angular_velocity) < 0.12:
 		_quiet += delta
 	else:
