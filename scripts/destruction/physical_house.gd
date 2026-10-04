@@ -116,7 +116,13 @@ func _physics_process(delta: float) -> void:
 	_age += delta
 	if _age < 2.0 or _collapsed:
 		return
-	var beam := get_node("LoadBeam") as RigidBody2D
+	var beam := get_node_or_null("LoadBeam") as RigidBody2D
+	if not is_instance_valid(beam):
+		# The beam itself broke up: the roof has nothing left to rest on.
+		_collapsed = true
+		building._integrity = 0
+		_emit("STRUCTURE_DESTROYED",global_position,0.8)
+		return
 	if beam.position.y > Vector2(initial["LoadBeam"]).y+35 or absf(beam.rotation) > 0.35:
 		_collapsed = true
 		building._integrity = 0
@@ -135,6 +141,8 @@ func closest_point(point: Vector2) -> Vector2:
 	var result := global_position
 	var best := INF
 	for body in pieces:
+		if not is_instance_valid(body):
+			continue
 		var local: Vector2 = body.to_local(point)
 		var polygon: PackedVector2Array = body.outline
 		if Geometry2D.is_point_in_polygon(local,polygon):

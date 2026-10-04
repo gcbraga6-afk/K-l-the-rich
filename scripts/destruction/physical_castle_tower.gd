@@ -90,7 +90,13 @@ func _physics_process(delta: float) -> void:
 	_age += delta
 	if _age<3 or _tower_fallen or tower_bodies.is_empty():
 		return
-	var crown := tower_bodies[0]
+	var crown: RigidBody2D = tower_bodies[0]
+	# The crown may have broken into shards, in which case the tower is simply gone.
+	if not is_instance_valid(crown):
+		_tower_fallen = true
+		building._integrity = maxi(1,building.max_integrity-8)
+		EventBus.world_event.emit({"type":"STRUCTURE_HIT","target":str(building.name),"part":"torre desabou","cause":"knight","position":global_position,"severity":0.8,"narrative_value":0.9})
+		return
 	if crown.position.distance_to(initial_poses[crown.name])>45 or absf(crown.rotation)>0.25:
 		_tower_fallen = true
 		# A lost tower damages the castle but does not destroy the whole keep.
@@ -101,6 +107,8 @@ func closest_point(point: Vector2) -> Vector2:
 	var best := Vector2(INF,INF)
 	var distance := INF
 	for part in parts:
+		if not is_instance_valid(part.body):
+			continue
 		var body: Node2D = part.body
 		for collision in part.collisions:
 			var polygon: PackedVector2Array = collision.polygon

@@ -94,7 +94,12 @@ func _physics_process(delta: float) -> void:
 	_age += delta
 	if _age < 2 or _collapsed:
 		return
-	var beam := get_node("LoadBeam") as RigidBody2D
+	var beam := get_node_or_null("LoadBeam") as RigidBody2D
+	if not is_instance_valid(beam):
+		_collapsed = true
+		building._integrity = 0
+		_emit("STRUCTURE_DESTROYED",global_position,0.8)
+		return
 	if beam.position.distance_to(roof_baseline)>35 or absf(beam.rotation)>0.35:
 		_collapsed = true
 		building._integrity = 0
