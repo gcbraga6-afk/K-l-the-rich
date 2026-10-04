@@ -17,6 +17,8 @@ const CORE_RATIO := 0.34      # share of the radius blown out outright
 const RELEASE_STRESS := 0.3   # accumulated energy that frees a piece outside the core
 const EJECT_SPEED := 420.0    # speed a cratered piece leaves at, at full energy
 const NUDGE_IMPULSE := 1200.0 # momentum handed to pieces beyond the core
+const SHATTER_ENERGY := 0.3   # energy above which cratered stone breaks instead of coming out whole
+const SHARD_COUNT := 8        # shards a broken piece becomes
 const RADIAL_SHARE := 0.45    # how much of the throw is radial rather than along the shot
 const MAX_DOWNWARD := 0.25    # ejecta cannot be driven down into the footing
 
@@ -25,6 +27,7 @@ var shape := {}       # instance id -> hull in body space
 var supporters := {}  # instance id -> pieces carrying its weight
 var anchored := {}    # instance id -> sits on the footing, never falls on its own
 var stress := {}      # instance id -> energy taken from blasts so far
+var fracture := true  # on-demand fracture; off reproduces whole-piece removal
 
 
 func build(bodies: Array[RigidBody2D]) -> void:
@@ -140,6 +143,10 @@ func _free(body: RigidBody2D, center: Vector2, near_local: Vector2, energy: floa
 	var impulse := direction * NUDGE_IMPULSE * energy
 	if cratered:
 		impulse = direction * EJECT_SPEED * energy * body.mass
+		# Enough energy and the stone does not leave as a slab: it breaks up.
+		if fracture and energy >= SHATTER_ENERGY and body.has_method("shatter"):
+			body.shatter(impulse, body.to_local(center), SHARD_COUNT)
+			return
 		# Cratered stone stops being part of the building. Without this it would
 		# be driven through its own neighbours and grind to a halt between them,
 		# leaving the hole full of the rubble that should have left it.

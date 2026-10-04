@@ -9,7 +9,7 @@ func run() -> void:
 	get_tree().current_scene = world
 	var village = world.get_node("Village")
 	var tower = world.get_node("Structures/Castle/ModularStructure")
-	await get_tree().create_timer(10).timeout
+	await steps(600)
 	for house in village.front_houses:
 		var physical = house.get_node("PhysicalHouse")
 		var beam = physical.get_node("LoadBeam")
@@ -44,7 +44,7 @@ func run() -> void:
 	ball.position = tower.to_global(tower.origin+Vector2(250,310)*tower.factor)
 	ball.linear_velocity = Vector2(2200,0)
 	world.add_child(ball)
-	await get_tree().create_timer(0.75).timeout
+	await steps(45)
 	await capture(world,Vector2(6170,-50),0.65,"physical_tower_impact")
 	# Follow the wall hit with a roof hit: surviving central walls may still
 	# support an unhit roof, so one displaced course need not destroy a house.
@@ -60,7 +60,7 @@ func run() -> void:
 	second.position = tower.to_global(tower.origin+Vector2(250,100)*tower.factor)
 	second.linear_velocity = Vector2(2400,0)
 	world.add_child(second)
-	await get_tree().create_timer(7).timeout
+	await steps(420)
 	print("HIT SUPPORT ",house.get_node("LeftWall1").position," door=",house.get_node("Door").position)
 	print("HOUSE roof_delta=",roof.position.distance_to(start)," collapsed=",house._collapsed," integrity=",village.front_houses[2]._integrity,"/",village.front_houses[2].max_integrity)
 	print("TOWER crown_delta=",crown.position.distance_to(crown_start)," collapsed=",tower._tower_fallen)
@@ -74,6 +74,10 @@ func run() -> void:
 	await capture(world,Vector2(1500,350),1.0,"expanded_village_after")
 	print("PASS: eight stable physical houses, original village art, stable tower, gravity collapse, surviving keep and persistent debris")
 	get_tree().quit()
+
+func steps(count: int) -> void:
+	for i in count:
+		await get_tree().physics_frame
 
 func capture(world: Node, at: Vector2, zoom: float, id: String) -> void:
 	if "--capture" not in OS.get_cmdline_user_args():

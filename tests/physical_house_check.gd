@@ -7,6 +7,7 @@ func run() -> void:
 	var lab = load("res://scenes/physics_lab/house.tscn").instantiate()
 	get_tree().root.add_child(lab)
 	get_tree().current_scene = lab
+	lab.set_fracture(false)
 	await get_tree().create_timer(3.0).timeout
 	var beam = lab.container.get_node("LoadBeam")
 	var roof = lab.container.get_node("RoofLeft")
@@ -38,7 +39,20 @@ func run() -> void:
 	for part in lab.pieces:
 		assert(absf(part.position.x)<5000 and part.position.y < 900,"Pieces must remain finite and collide with ground")
 	assert(lab.pieces.size() == 13,"No pieces may disappear or be replaced by a ruined sprite")
-	print("PASS: stable house, local blast energy, cratered course ejected, gravity collapse, untouched far wall, persistent bodies")
+	# Same house, fracture on: the struck course must break up into shards that
+	# carry the facade, and raise dust, instead of leaving as one slab.
+	lab.reset_house()
+	await get_tree().create_timer(1.0).timeout
+	lab.set_fracture(true)
+	lab.fire(Vector2(1250,-280))
+	await get_tree().create_timer(2.5).timeout
+	var shards := get_tree().get_nodes_in_group("stone_shards")
+	print("FRACTURE shards=",shards.size()," standing=",lab.masonry.standing(),"/",lab.pieces.size())
+	assert(shards.size() >= 8,"Cratered stone must break into shards, not come out as a slab")
+	for piece in lab.pieces:
+		assert(not is_instance_valid(piece) or not piece.shattered,"A shattered piece must not linger beside its shards")
+	assert(lab.masonry.standing() > 0,"Fracture must not level the whole house at once")
+	print("PASS: stable house, local blast energy, cratered course ejected, gravity collapse, untouched far wall, persistent bodies, on-demand fracture")
 	get_tree().quit()
 
 func capture(id: String) -> void:

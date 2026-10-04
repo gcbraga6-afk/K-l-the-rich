@@ -17,6 +17,7 @@ var status: Label
 var settling := 0.0
 var shot_count := 0
 var resetting := false
+var fracture_mode := true
 
 func _ready() -> void:
 	DisplayServer.window_set_title("Teste de física — casa com peças reais")
@@ -62,6 +63,7 @@ func _build_house() -> void:
 	_polygon("RoofLeft",PackedVector2Array([Vector2(1010,536),Vector2(1180,402),Vector2(1180,536)]),5,Color("568ba8"),"roof")
 	_polygon("RoofRight",PackedVector2Array([Vector2(1180,402),Vector2(1350,536),Vector2(1180,536)]),5,Color("44738f"),"roof")
 	masonry = Masonry.new()
+	masonry.fracture = fracture_mode
 	masonry.build(pieces)
 
 func _box(id: String, at: Vector2, size: Vector2, weight: float, color: Color, type: String) -> void:
@@ -138,6 +140,10 @@ func _on_ball_contact(body: Node, ball: RigidBody2D) -> void:
 	projectiles.erase(ball)
 	ball.queue_free()
 
+func set_fracture(enabled: bool) -> void:
+	fracture_mode = enabled
+	masonry.fracture = enabled
+
 func reset_house() -> void:
 	if resetting:
 		return
@@ -153,6 +159,8 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode == KEY_R:
 			reset_house()
+		elif event.keycode == KEY_F:
+			set_fracture(not fracture_mode)
 		elif event.keycode == KEY_SPACE:
 			fire(Vector2(1250,-280))
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
@@ -168,7 +176,9 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _process(delta: float) -> void:
 	settling = maxf(0,settling-delta)
-	status.text = "Acomodando as peças…" if settling > 0 else "Tiros: %d · Peças de pé: %d/%d" % [shot_count,masonry.standing(),pieces.size()]
+	var shards := get_tree().get_nodes_in_group("stone_shards").size()
+	var mode := "ESPATIFA em lascas" if fracture_mode else "peças INTEIRAS"
+	status.text = "Acomodando as peças…" if settling > 0 else "Modo: %s  ·  Tiros: %d  ·  De pé: %d/%d  ·  Lascas: %d" % [mode,shot_count,masonry.standing(),pieces.size(),shards]
 	queue_redraw()
 
 func _make_ui() -> void:
@@ -192,7 +202,7 @@ func _make_ui() -> void:
 	title.add_theme_font_size_override("font_size",24)
 	column.add_child(title)
 	var help := Label.new()
-	help.text = "Arraste a bola para trás e solte. As peças têm peso e colidem entre si.\nEspaço: tiro na base da parede · R: reconstruir"
+	help.text = "Arraste a bola para trás e solte, ou use o botão.\nF: troca entre espatifar em lascas e peças inteiras · Espaço: tiro na base · R: reconstruir"
 	help.add_theme_font_size_override("font_size",18)
 	column.add_child(help)
 	status = Label.new()
@@ -204,6 +214,10 @@ func _make_ui() -> void:
 	shoot.text = "Atirar na base"
 	shoot.pressed.connect(func(): fire(Vector2(1250,-280)))
 	controls.add_child(shoot)
+	var toggle := Button.new()
+	toggle.text = "Trocar modo (F)"
+	toggle.pressed.connect(func(): set_fracture(not fracture_mode))
+	controls.add_child(toggle)
 	var reset := Button.new()
 	reset.text = "Reconstruir"
 	reset.pressed.connect(reset_house)
