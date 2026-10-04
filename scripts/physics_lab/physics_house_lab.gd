@@ -139,7 +139,10 @@ func _on_ball_contact(body: Node, ball: RigidBody2D) -> void:
 	# body it touches in the flush and detonates several times over.
 	if not is_instance_valid(ball) or ball.has_meta("spent"):
 		return
-	if not pieces.has(body) and not body.is_in_group("stone_shards"):
+	# pieces is typed, so asking it about the ground StaticBody2D raises an engine
+	# error, and the editor stops the running game on it.
+	var masonry_hit := body is RigidBody2D and pieces.has(body)
+	if not masonry_hit and not body.is_in_group("stone_shards"):
 		return
 	ball.set_meta("spent", true)
 	masonry.blast(ball.global_position, BLAST_RADIUS, 1.0, ball.linear_velocity.normalized())

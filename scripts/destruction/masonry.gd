@@ -49,14 +49,16 @@ func build(bodies: Array[RigidBody2D]) -> void:
 		var rect: Rect2 = rects[id]
 		anchored[id] = rect.end.y >= footing - GROUND_TOL
 		var below: Array[RigidBody2D] = []
+		var grown := rect.grow(JOINT_TOL)
 		for other in pieces:
 			if other == body:
 				continue
 			var other_rect: Rect2 = rects[other.get_instance_id()]
-			# Only a piece underneath carries weight, and only where they overlap.
-			if rect.position.x >= other_rect.end.x - 2.0 or other_rect.position.x >= rect.end.x - 2.0:
+			# Touching, and underneath. Irregular shards do not line up in courses,
+			# so neighbours are found by contact rather than by matching edges.
+			if not grown.intersects(other_rect):
 				continue
-			if absf(other_rect.position.y - rect.end.y) <= JOINT_TOL:
+			if other_rect.get_center().y > rect.get_center().y + 1.0:
 				below.append(other)
 		supporters[id] = below
 		body.allow_fracture = fracture
