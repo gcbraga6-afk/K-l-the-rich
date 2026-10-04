@@ -368,33 +368,52 @@ func _build_sprite() -> void:
 # nothing else. It is always there and always hidden; a breach is what reveals it.
 # Kept plain so one room reads correctly behind any of the twenty cottages, and so
 # replacing it with painted art later changes nothing else.
+# The room behind the facade: a back wall, a floor and the joists over them.
+# It is always there and always hidden; a breach is what reveals it.
+#
+# Painted far lighter than a real room would look from outside in daylight. At
+# this size a physically honest interior is a black hole in the wall and reads as
+# nothing at all; the eye needs the floor and the back wall to actually separate.
 func _build_interior() -> void:
 	var w := art.get_width()
 	var h := art.get_height()
 	var room := Image.create(w, h, false, Image.FORMAT_RGBA8)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash(str(art.get_size()) + str(eaves))
-	var dark := Color("231b14")
-	# Deepest up under the eaves, a shade warmer down where the floor catches light.
+	var wall := Color("584736")
+	var floor_tone := Color("7a6449")
+	var timber := Color("33281d")
+	var roof_space := Color("2e251b")
+	var floor_y := int(h * 0.80)
+	var ceiling := int(h * 0.34)
+	# Roof space above the joists is the darkest part of the house.
 	for y in range(h):
-		var shade := dark.lightened(0.01 + float(y) / float(h) * 0.13)
+		for x in range(w):
+			room.set_pixel(x, y, roof_space if y < ceiling else wall)
+	# The back wall, shaded down towards the eaves so it has somewhere to recede to.
+	for y in range(ceiling, floor_y):
+		var depth := float(y - ceiling) / maxf(float(floor_y - ceiling), 1.0)
+		var shade := wall.darkened(0.30 * (1.0 - depth))
 		for x in range(w):
 			room.set_pixel(x, y, shade)
-	var floor_y := int(h * 0.76)
-	var ceiling := int(h * 0.30)
-	# Back wall boards: just enough relief to read as a surface standing behind.
-	for i in range(14):
-		var bx := int(w * (0.04 + 0.068 * i))
-		_fill(room, Rect2i(bx, ceiling, 2, floor_y - ceiling), dark.lightened(0.07))
-	# The floor plane, which is what actually sells depth.
-	_fill(room, Rect2i(0, floor_y, w, h - floor_y), dark.lightened(0.17))
-	_fill(room, Rect2i(0, floor_y, w, 2), dark.lightened(0.30))
+	# Boards on the back wall, alternating so the surface has a grain to catch.
+	for i in range(13):
+		var bx := int(w * (0.03 + 0.075 * i))
+		_fill(room, Rect2i(bx, ceiling, 3, floor_y - ceiling), wall.darkened(0.22))
+		_fill(room, Rect2i(bx + 3, ceiling, 2, floor_y - ceiling), wall.lightened(0.10))
+	# The floor plane. This is what actually sells depth: a surface going back.
+	_fill(room, Rect2i(0, floor_y, w, h - floor_y), floor_tone)
+	_fill(room, Rect2i(0, floor_y, w, 3), floor_tone.lightened(0.25))
+	for i in range(9):
+		var fy := floor_y + 4 + i * 4
+		if fy < h:
+			_fill(room, Rect2i(0, fy, w, 1), floor_tone.darkened(0.14))
 	# Joists over the room, snapped and hanging where the roof came down.
-	_fill(room, Rect2i(0, ceiling, w, 3), dark.lightened(0.20))
-	for i in range(6):
-		var jx := int(w * (0.07 + 0.16 * i))
-		var drop := rng.randi_range(0, int(h * 0.12))
-		_beam(room, Vector2(jx, ceiling), Vector2(jx + rng.randi_range(-14, 14), ceiling + drop + 10), 3, dark.lightened(0.24))
+	_fill(room, Rect2i(0, ceiling - 2, w, 5), timber)
+	for i in range(7):
+		var jx := int(w * (0.06 + 0.14 * i))
+		var drop := rng.randi_range(0, int(h * 0.16))
+		_beam(room, Vector2(jx, ceiling), Vector2(jx + rng.randi_range(-18, 18), ceiling + drop + 12), 4, timber)
 	_room_texture = ImageTexture.create_from_image(room)
 
 
