@@ -91,6 +91,8 @@ static func scatter(host: Node, source: Node2D, options: Dictionary) -> int:
 		body.global_rotation = source.global_rotation
 		body.collision_layer = 8
 		body.collision_mask = 1 | 8 | 16
+		body.z_as_relative = false
+		body.z_index = 5
 		var collider := CollisionShape2D.new()
 		var convex := ConvexPolygonShape2D.new()
 		convex.points = hull

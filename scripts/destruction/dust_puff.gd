@@ -10,6 +10,9 @@ var _age := 0.0
 var _life := 1.6
 
 func configure(strength: float, stone_tint := Color("9aafbf")) -> void:
+	# Dust has to read in front of the scenery, like the rubble it comes off.
+	z_as_relative = false
+	z_index = 6
 	_tint = stone_tint.lightened(0.5)
 	_life = 1.1 + strength * 1.1
 	var count := int(clampf(7.0 + strength * 30.0, 7.0, 40.0))
