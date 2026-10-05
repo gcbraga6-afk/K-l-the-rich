@@ -188,19 +188,18 @@ func _collapse_roof(at_x: float, radius: float) -> void:
 	var pieces := clampi(chunks.size() / 240, 4, 14)
 	for i in pieces:
 		var seed_point: Vector2 = chunks[rng.randi_range(0, chunks.size() - 1)]
-		var span := tile * rng.randf_range(0.09, 0.17)
-		var slab := PackedVector2Array([
-			Vector2(-span * 1.7, -span * 0.42),
-			Vector2(span * 1.7, -span * 0.52),
-			Vector2(span * 1.6, span * 0.46),
-			Vector2(-span * 1.8, span * 0.40)])
+		var span := tile * rng.randf_range(0.07, 0.14)
+		var slab := PackedVector2Array()
+		for corner in range(6):
+			var angle := TAU * corner / 6.0 + rng.randf_range(-0.26, 0.26)
+			slab.append(Vector2.RIGHT.rotated(angle) * Vector2(span * 1.7, span * 0.6) * rng.randf_range(0.75, 1.25))
 		# A roof falls in on itself: the span drops into the room, it does not burst
 		# outwards like something thrown.
 		# Near the hit the span is thrown clear; further along it simply drops in.
 		var thrown := _hurl(seed_point, Vector2(at_x, eaves * 0.86), radius * 1.3, rng)
 		_debris(slab, seed_point, thrown + Vector2(0.0, rng.randf_range(40.0, 120.0)), Color("a8603f"), 0.7)
 	var puff := DustPuff.new()
-	puff.configure(1.4, Color("b3a994"))
+	puff.configure(1.4, Color("b3a994"), radius * pixel / 60.0)
 	puff.position = base_offset + Vector2(at_x, eaves * 0.6) * pixel
 	add_child(puff)
 
@@ -486,7 +485,7 @@ func _spill(at: Vector2, radius: float, removed: int, taken: Array) -> void:
 		var from: Vector2 = taken[rng.randi_range(0, taken.size() - 1)] if not taken.is_empty() else _to_mask(at)
 		_debris(chunk, from, _hurl(from, _to_mask(at), radius / pixel, rng), Color("9d9280"), 1.0)
 	var puff := DustPuff.new()
-	puff.configure(clampf(float(removed) / 2600.0, 0.5, 1.5), Color("b3a994"))
+	puff.configure(clampf(float(removed) / 2600.0, 0.5, 1.5), Color("b3a994"), radius / 60.0)
 	puff.position = to_local(at)
 	add_child(puff)
 

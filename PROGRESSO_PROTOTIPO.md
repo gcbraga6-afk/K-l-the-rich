@@ -303,6 +303,23 @@ reescritos para cobrar o comportamento: a casa perde material, continua de pé c
 um tiro, e as vizinhas não perdem nada — a garantia anti-sinuca agora em escala de
 reino (7 de 7 casas vizinhas intocadas).
 
+Ajustes depois de ver no jogo:
+- Estilhaço **não dispara mais estouro**. Destroço voando machuca a construção que
+  acerta, mas não abre buraco nela — senão cada desabamento acendia uma cadeia de
+  desabamentos em volta. A marca `cascade=false` já existia e passou a ser honrada.
+- Poeira e destroço do telhado estavam dimensionados em unidades de mundo,
+  calibrados na bancada, onde a casa tem 430 de largura. No jogo a casa tem 225, e
+  tudo saía com o dobro do tamanho relativo: a nuvem engolia a própria casa. Agora
+  a poeira escala com a mordida que a levantou, e as peças de telhado são lascas
+  irregulares em vez de lajes retangulares.
+- `fire_burst.gd`: a bala Basic agora explode com fogo — corpo escuro, meio
+  alaranjado e miolo claro, cada um irregular e com seu próprio tempo, mais
+  fagulhas arremessadas e fumaça que sobrevive à chama. Desenhado por código, sem
+  arte nova. Flash continua sendo luz, não fogo.
+
 PENDÊNCIAS: a torre do castelo e o espelho continuam no modelo de blocos, a pedido
 do usuário, e serão feitos com atenção própria. Só `house_02.png` tem mapa de
 materiais; as outras 19 casas funcionam sem mapa, como alvenaria.
+
+Observação de composição, não defeito: a vila é densa e as fachadas se sobrepõem,
+então o estrago numa casa fica parcialmente escondido pelas vizinhas da frente.

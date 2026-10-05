@@ -9,7 +9,9 @@ var _tint := Color("b8b2a4")
 var _age := 0.0
 var _life := 1.6
 
-func configure(strength: float, stone_tint := Color("9aafbf")) -> void:
+# `scale` is how big the thing that raised this dust was. Without it the cloud is
+# sized for one building and swallows every smaller one.
+func configure(strength: float, stone_tint := Color("9aafbf"), scale := 1.0) -> void:
 	# Dust has to read in front of the scenery, like the rubble it comes off.
 	z_as_relative = false
 	z_index = 6
@@ -19,12 +21,12 @@ func configure(strength: float, stone_tint := Color("9aafbf")) -> void:
 	var rng := RandomNumberGenerator.new()
 	for i in count:
 		var angle := rng.randf_range(0.0, TAU)
-		var speed := rng.randf_range(16.0, 95.0) * (0.45 + strength)
+		var speed := rng.randf_range(16.0, 95.0) * (0.45 + strength) * scale
 		_motes.append({
 			"at": Vector2.ZERO,
-			"velocity": Vector2.RIGHT.rotated(angle) * speed + Vector2(0, -rng.randf_range(10.0, 48.0)),
-			"radius": rng.randf_range(3.0, 10.0) * (0.7 + strength),
-			"grow": rng.randf_range(10.0, 26.0),
+			"velocity": Vector2.RIGHT.rotated(angle) * speed + Vector2(0, -rng.randf_range(10.0, 48.0) * scale),
+			"radius": rng.randf_range(3.0, 10.0) * (0.7 + strength) * scale,
+			"grow": rng.randf_range(10.0, 26.0) * scale,
 			"delay": rng.randf_range(0.0, 0.18),
 		})
 

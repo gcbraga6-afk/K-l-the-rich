@@ -7,11 +7,18 @@ extends Node2D
 var weapon := "Basic"
 var heading := Vector2.ZERO
 
+const FireBurst = preload("res://scripts/effects/fire_burst.gd")
+
 @onready var blast: ColorRect = $Blast
 
 func _ready() -> void:
 	_apply_damage()
 	if weapon == "Basic":
+		# A cannon round burns. Flash is a light, and stays a light.
+		var fire := Node2D.new()
+		fire.set_script(FireBurst)
+		add_child(fire)
+		fire.configure(radius * 0.62, 1.0)
 		_spawn_debris()
 	EventBus.emit_camera_shake_requested(11.0, 0.24)
 

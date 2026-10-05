@@ -48,7 +48,13 @@ func _map_for(art) -> Texture2D:
 	return null
 
 
-func damage_near(_amount: int, source: Vector2, strength: float, _radius := 155.0, _heading := Vector2.ZERO, _cascade := true) -> void:
+func damage_near(_amount: int, source: Vector2, strength: float, _radius := 155.0, _heading := Vector2.ZERO, cascade := true) -> void:
+	# Flying rubble hurts a building without blowing a hole in it. Only a round
+	# going off carves masonry away; debris striking a wall marks it and no more,
+	# or every collapse sets off a chain of further collapses around it.
+	if not cascade:
+		_hit(source)
+		return
 	var art = building.get_node("Artwork")
 	facade.carve(source, art.house_width * BITE * clampf(strength, 0.45, 1.0))
 	# The hit registers at once, because the game reads damage the moment a round
