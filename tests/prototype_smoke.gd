@@ -31,10 +31,15 @@ func run() -> void:
 	world.add_child(basic)
 	assert(house._integrity < house.max_integrity, "Explosion must measure distance to building surface")
 	var physical = house.get_node("PhysicalHouse")
-	assert(physical.pieces.size() == 14, "Explosion must preserve the original physical parts")
-	assert(house.get_node("CollisionShape2D").disabled, "Legacy solid facade must not block the moving pieces")
-	for piece in physical.pieces:
-		assert(piece.has_node("Skin"), "Damage must never swap a piece for a ruined sprite")
+	assert(house.get_node("CollisionShape2D").disabled, "Legacy solid facade must not block the carved one")
+	# The round takes a bite; it does not swap the cottage for a ruin sprite, and it
+	# does not level a house that it only clipped. The carve itself has to wait for
+	# the physics server, so there is nothing to measure until the frame turns over.
+	for i in range(4):
+		await get_tree().physics_frame
+	var left: float = physical.standing_ratio()
+	assert(left < 1.0, "The round must take material out of the cottage")
+	assert(left > 0.5, "A single round must leave the cottage standing")
 	knight._ammo = 1
 	knight._fire(Vector2(1500, -1500))
 	assert(not knight._intervention_active, "Last shot must end intervention")

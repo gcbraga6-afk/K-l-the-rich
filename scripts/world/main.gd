@@ -37,7 +37,7 @@ func _ready() -> void:
 	for house in village.front_houses:
 		var physical_house := Node2D.new()
 		physical_house.name = "PhysicalHouse"
-		physical_house.set_script(preload("res://scripts/destruction/physical_house.gd") if house.name == "VillageHouse" else preload("res://scripts/destruction/physical_village_house.gd"))
+		physical_house.set_script(preload("res://scripts/destruction/carved_house.gd"))
 		house.add_child(physical_house)
 	var tower := Node2D.new()
 	tower.name = "ModularStructure"

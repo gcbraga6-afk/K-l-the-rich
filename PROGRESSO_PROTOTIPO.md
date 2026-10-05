@@ -286,5 +286,23 @@ a vir do mapa em vez do palpite pela linha do beiral. Formato documentado em
 `assets/houses/materials/README.md`. Só `house_02.png` existe; as outras 19 casas
 continuam funcionando sem mapa, tratadas como alvenaria.
 
-PENDÊNCIA: nada disso está no jogo ainda — só na bancada `carve.tscn`. As casas do
-reino seguem no modelo antigo de blocos.
+NO JOGO — as casas do reino passaram para o modelo de recorte. `carved_house.gd`
+ocupa o lugar do antigo `PhysicalHouse`, responde `damage_near` e `closest_point`,
+e a integridade do prédio passa a seguir **quanto da casa ainda está de pé** em vez
+de contar tiros. O acerto é reportado na hora, porque o jogo lê dano no instante do
+impacto, e o quanto sobrou só pode ser medido depois do recorte, que é adiado para
+fora do flush da física. Casa cai quando resta menos de 60% da alvenaria.
+
+Bugs encontrados ao integrar: um estouro ao lado da casa recortava o ar em vez da
+parede mais próxima; e o teste de limites do ponto de recorte só olhava o índice no
+array, então um x maior que a largura enrolava para outra linha e passava como
+válido, fazendo o recorte acontecer fora de alcance.
+
+Os 15 testes passam com zero erros. Testes que cobravam peças por nome foram
+reescritos para cobrar o comportamento: a casa perde material, continua de pé com
+um tiro, e as vizinhas não perdem nada — a garantia anti-sinuca agora em escala de
+reino (7 de 7 casas vizinhas intocadas).
+
+PENDÊNCIAS: a torre do castelo e o espelho continuam no modelo de blocos, a pedido
+do usuário, e serão feitos com atenção própria. Só `house_02.png` tem mapa de
+materiais; as outras 19 casas funcionam sem mapa, como alvenaria.

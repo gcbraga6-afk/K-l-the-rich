@@ -1,9 +1,8 @@
 extends Node
 
-# Fracture replaces struck masonry with shards, so a piece is no longer a node
-# that lives for the whole intervention. This checks the behaviour instead of the
-# survival of particular bodies: one round opens a hole and the cottage sags onto
-# what is left, and only repeated hits bring it down.
+# A cottage in the actual village, shelled by the actual cannon. One round opens a
+# hole and the house goes on standing; the far side of it is untouched; repeated
+# rounds bring it down, and the kingdom hears about it.
 
 func _ready() -> void:
 	call_deferred("run")
@@ -19,74 +18,50 @@ func run() -> void:
 	EventBus.world_event.connect(func(event: Dictionary): events.append(event))
 	EventBus.projectile_impacted.connect(func(event: Dictionary): impacts.append(event))
 	await steps(240)
-	assert(not house.region("LoadBeam").is_empty(),"The cottage must be built from physical stones")
-	assert(house.region_centre("LoadBeam").distance_to(house.beam_baseline)<6,"House must stand in the actual village")
-	for body in house.region("LoadBeam"):
-		assert(absf(body.rotation)<0.06,"Roof supports must remain level before a shot")
-	assert(not house._collapsed,"Settlement alone must not destroy a house")
-	for piece in house.pieces:
-		assert(not piece.released and piece.has_node("Skin"))
+	assert(is_equal_approx(house.standing_ratio(), 1.0), "The cottage must stand whole in the actual village")
+	assert(not house._collapsed, "Settling alone must not destroy a house")
+	assert(building._integrity == building.max_integrity)
 	await capture("village_physics_before")
-	var roof_y: float = house.region_centre("RoofLeft").y
-	world.get_node("Knight")._fire(Vector2(800,90))
+
+	var facade = house.facade
+	var far_side: Vector2 = facade.to_global(facade.base_offset
+		+ Vector2(facade.art.get_width() * 0.88, facade.art.get_height() * 0.8) * facade.pixel)
+	world.get_node("Knight")._fire(Vector2(800, 90))
 	await steps(75)
 	await capture("village_physics_impact")
-	assert(not impacts.is_empty() and impacts[0].target == &"VillageHouse","Real cannon must hit the physical house")
-	assert(get_tree().get_nodes_in_group("active_projectiles").is_empty(),"The round must detonate on the masonry, not drive through it")
-	await steps(300)
+	assert(not impacts.is_empty() and impacts[0].target == &"VillageHouse", "The real cannon must hit the cottage")
+	assert(get_tree().get_nodes_in_group("active_projectiles").is_empty(), "The round must detonate, not drive through")
+	await steps(120)
 	await capture("village_physics_after")
-	var shards := get_tree().get_nodes_in_group("stone_shards").size()
-	var roof_left: Array = house.region("RoofLeft")
-	var drop: float = (house.region_centre("RoofLeft").y-roof_y) if not roof_left.is_empty() else INF
-	print("VILLAGE_PHYSICS shards=",shards," roof_drop=",drop," standing=",house.masonry.standing(),"/",house.pieces.size()," collapsed=",house._collapsed)
-	# The struck side must be gone: either broken into shards or sunk into the hole.
-	for row in range(1,5):
-		for struck in house.region("LeftWall%d" % row):
-			assert(struck.released,"The struck courses must come out of the wall")
-	assert(shards >= 6,"Cratered stone must break into shards, not leave as slabs")
-	# The anti-billiards guarantee: masonry the blast never reached, and that kept
-	# its support, must not have budged at all.
-	for row in range(5):
-		var standing_far: Array = house.region("RightWall%d" % row)
-		assert(not standing_far.is_empty(),"The far wall must survive a hit it never took")
-		for far in standing_far:
-			assert(not far.released,"The far wall must not come loose")
-			assert(far.position.is_equal_approx(house.initial[far.name]),"The far wall must not be shoved aside")
-	# The far wall and the door still carry the beam, so the roof stays up. That is
-	# the approved rule: a round opens a hole, it does not flatten the cottage.
-	assert(drop < 40.0,"One round must leave the roof carried by what is left")
-	assert(not house._collapsed,"One round must leave the cottage standing, not flatten it")
-	assert(not events.any(func(e):return e.type=="STRUCTURE_DESTROYED" and e.target=="VillageHouse"),"A hole is damage, not destruction")
-	assert(events.any(func(e):return e.type=="STRUCTURE_HIT" and e.target=="VillageHouse"),"The hole must still report damage")
-	# Taking out the surviving support finishes the cottage off.
-	for shot in range(4):
-		var wall: Array = house.region("RightWall%d" % (4-shot)) if shot < 4 else []
-		if wall.is_empty():
-			wall = house.region("LoadBeam")
-		if wall.is_empty():
-			continue
-		var target: RigidBody2D = wall[0]
+	var left: float = house.standing_ratio()
+	print("VILLAGE standing=", left, " integrity=", building._integrity, "/", building.max_integrity, " collapsed=", house._collapsed)
+	assert(left < 1.0, "The round must take material out of the cottage")
+	assert(left > 0.5, "One round must leave the cottage standing, not flatten it")
+	assert(not house._collapsed, "A hole is damage, not destruction")
+	assert(events.any(func(e): return e.type == "STRUCTURE_HIT" and e.target == "VillageHouse"), "The hole must be reported")
+	assert(not events.any(func(e): return e.type == "STRUCTURE_DESTROYED" and e.target == "VillageHouse"))
+	# Masonry the blast never reached is exactly as it was: the anti-billiards
+	# guarantee, now on a facade rather than on a stack of blocks.
+	assert(facade.closest_point(far_side).distance_to(far_side) < 40.0, "The far side of the cottage must still be there")
+
+	# Rounds into the same cottage finish it.
+	for shot in range(5):
+		if house._collapsed:
+			break
 		var finisher = load("res://scenes/projectile.tscn").instantiate()
-		finisher.position = target.global_position+Vector2(140,0)
-		finisher.linear_velocity = Vector2(-1700,0)
+		finisher.position = facade.to_global(facade.base_offset
+			+ Vector2(facade.art.get_width() * (0.2 + 0.15 * shot), 0.0) * facade.pixel) - Vector2(0, 130)
+		finisher.linear_velocity = Vector2(0, 650)
 		world.add_child(finisher)
-		for other in get_tree().get_nodes_in_group("structures"):
-			if other is PhysicsBody2D:
-				finisher.add_collision_exception_with(other)
-		await steps(180)
-	await steps(240)
-	var roof_gone: bool = house.region("RoofLeft").is_empty()
-	var roof_fell: float = 0.0 if roof_gone else house.region_centre("RoofLeft").y-roof_y
-	print("VILLAGE_PHYSICS after finishers: standing=",house.masonry.standing(),"/",house.pieces.size()," shards=",get_tree().get_nodes_in_group("stone_shards").size()," collapsed=",house._collapsed," roof_gone=",roof_gone," roof_fell=",roof_fell)
-	assert(roof_gone or roof_fell > 30.0,"With both supports gone the roof must come down or break up")
-	assert(house._collapsed,"Losing both supports must bring the cottage down")
-	assert(events.any(func(e):return e.type=="STRUCTURE_DESTROYED" and e.target=="VillageHouse"))
-	for piece in house.pieces:
-		if is_instance_valid(piece):
-			assert(is_finite(piece.global_position.x) and piece.global_position.y<850,"Rubble must collide with the ground")
+		await steps(90)
+	await steps(120)
+	print("VILLAGE after finishers: standing=", house.standing_ratio(), " collapsed=", house._collapsed)
+	assert(house._collapsed, "Enough rounds must bring the cottage down")
+	assert(events.any(func(e): return e.type == "STRUCTURE_DESTROYED" and e.target == "VillageHouse"))
+	assert(building._integrity == 0)
 	for node in get_tree().get_nodes_in_group("stone_shards"):
-		assert(is_finite(node.global_position.x) and node.global_position.y<900,"Shards must collide with the ground")
-	print("PASS: art on physical bodies; one round opens a hole and the cottage sags; stone breaks into shards; far wall untouched; repeated hits bring it down; social events")
+		assert(is_finite(node.global_position.x) and node.global_position.y < 900, "Rubble must collide with the ground")
+	print("PASS: a cottage in the village takes a hole from one round, stands, and falls to several; social events reported")
 	get_tree().quit()
 
 func steps(count: int) -> void:

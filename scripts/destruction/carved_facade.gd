@@ -65,6 +65,7 @@ var _material := PackedByteArray()   # one byte per pixel, from the painted map
 var _window_of := PackedInt32Array() # which window opening a pixel belongs to, 0 for none
 var _window_pixels := {}             # opening id -> its pixels
 var _gone_windows := {}              # openings already blown out
+var _has_map := false                # whether this house carries a painted map
 
 
 func setup(texture: Texture2D, width: float, foot_y: float, structure: Node = null, materials: Texture2D = null) -> void:
@@ -123,11 +124,19 @@ func _carve_now(at: Vector2, radius: float) -> void:
 		return
 	var centre := _to_mask(at)
 	var r := maxf(radius / pixel, 3.0)
+	# A round that lands beside the house, or in a hole already taken out of it,
+	# still bites the nearest masonry rather than chewing empty air.
+	# Checked against both dimensions: an x past the width still lands inside the
+	# byte array, one row down, and the carve then happens somewhere it cannot reach.
+	if not _standing_at(centre):
+		centre = _to_mask(closest_point(at))
 	var before := _standing_pixels()
 	var taken := []
+	# Without a painted map every pixel is masonry, so the map cannot be asked what
+	# is roof; the eaves line found from the silhouette answers instead.
 	var probe_index := int(centre.y) * art.get_width() + int(centre.x)
 	var on_roof: bool = centre.y < eaves
-	if probe_index >= 0 and probe_index < _material.size() and _material[probe_index] != NOTHING:
+	if _has_map and probe_index >= 0 and probe_index < _material.size() and _material[probe_index] != NOTHING:
 		on_roof = _material[probe_index] == ROOF
 	if on_roof:
 		# Rafters carry the roof across its whole span. Break them and the span
@@ -205,6 +214,7 @@ func _read_materials(map: Texture2D) -> void:
 	var h := art.get_height()
 	_material.resize(w * h)
 	_window_of.resize(w * h)
+	_has_map = map != null
 	if map == null:
 		for i in range(w * h):
 			_material[i] = WALL
@@ -256,6 +266,37 @@ func _find_windows(w: int, h: int) -> void:
 					_window_of[near] = next_id
 					queue.append(near)
 		_window_pixels[next_id] = pixels
+
+
+# The nearest point on what is still standing, for working out whether a blast
+# reaches this building at all.
+func _standing_at(mask_point: Vector2) -> bool:
+	if mask_point.x < 0.0 or mask_point.y < 0.0:
+		return false
+	if mask_point.x >= float(art.get_width()) or mask_point.y >= float(art.get_height()):
+		return false
+	return _mask_bytes[int(mask_point.y) * art.get_width() + int(mask_point.x)] > 0
+
+
+func closest_point(point: Vector2) -> Vector2:
+	var local := _to_mask(point)
+	var w := art.get_width()
+	var h := art.get_height()
+	var inside := Vector2(clampf(local.x, 0.0, w - 1.0), clampf(local.y, 0.0, h - 1.0))
+	var index := int(inside.y) * w + int(inside.x)
+	if index >= 0 and index < _mask_bytes.size() and _mask_bytes[index] > 76:
+		return to_global(base_offset + inside * pixel)
+	# Not on standing masonry: search outward in rings, coarsely, and settle for the
+	# clamped point if this building has nothing left near there.
+	for ring in range(4, maxi(w, h), 6):
+		for step in range(0, 16):
+			var probe := inside + Vector2.RIGHT.rotated(TAU * step / 16.0) * ring
+			if probe.x < 0.0 or probe.y < 0.0 or probe.x >= w or probe.y >= h:
+				continue
+			var at := int(probe.y) * w + int(probe.x)
+			if _mask_bytes[at] > 76:
+				return to_global(base_offset + probe * pixel)
+	return to_global(base_offset + inside * pixel)
 
 
 func standing_ratio() -> float:
