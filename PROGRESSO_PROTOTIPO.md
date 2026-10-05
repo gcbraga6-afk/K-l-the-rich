@@ -356,3 +356,15 @@ A bala detonava no ar, por **duas** causas somadas:
    atrás de uma alta e exige que nenhuma detone acima da linha dos telhados nem
    contra outra bala. O Flash também só enxerga o chão; quem acha alvenaria é o
    sensor dele.
+
+### Nobres recortadas e composição da indústria — 2026-10-05
+
+- As quatro casas nobres interativas passaram para o modelo de recorte, junto com
+  vila, comércio e indústria. Só a torre e o espelho seguem no modelo antigo, a
+  pedido do usuário, para fazermos com atenção própria.
+- Nobres maiores (de 265/220/260/245 para 310/258/305/287) e mais espaçadas
+  (x 4320, 4630, 4930, 5230). O terraço ainda sobra até o pé do castelo, em 5775,
+  então as quatro ficam.
+- Indústria **50% maior** (330 para 495) e montada em dois planos: cada prédio fica
+  cerca de metade atrás do seguinte, os de trás mais acima no pátio, com z menor e
+  mais névoa. Em fila, com luz entre todos, lia como quatro galpões soltos.

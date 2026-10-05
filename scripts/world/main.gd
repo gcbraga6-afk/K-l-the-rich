@@ -34,10 +34,11 @@ func _ready() -> void:
 	court.name = "RoyalCourt"
 	court.set_script(preload("res://scripts/world/royal_court.gd"))
 	add_child(court)
-	# Every building in the village street is carved, cottages and trade alike.
-	# A shop left on the old model falls back to its painted ruin, which is a row of
-	# flat grey rectangles in a street where everything else breaks properly.
-	for house in village.front_houses + businesses.buildings:
+	# Every building a round can reach is carved: cottages, trade and the terrace of
+	# noble houses alike. One left on the old model falls back to its painted ruin,
+	# which is a row of flat grey rectangles in a street where everything else
+	# breaks properly.
+	for house in village.front_houses + businesses.buildings + composition.noble_houses:
 		var physical_house := Node2D.new()
 		physical_house.name = "PhysicalHouse"
 		physical_house.set_script(preload("res://scripts/destruction/carved_house.gd"))

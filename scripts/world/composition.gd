@@ -36,13 +36,25 @@ func _ready() -> void:
 	var businesses = world.get_node("Businesses")
 	# Two shops fewer, and the two that remain take the space the awnings had, so
 	# the street reads as a street rather than as a wall of frontage.
-	var bx := [950, 1520, 2720, 2990, 3260, 3530]
+	# The works are drawn larger than they were, and spread to match: at the old
+	# spacing a wider building only buys more overlap, not more presence.
+	var bx := [950, 1520, 2700, 2970, 3240, 3510]
 	for i in businesses.buildings.size():
 		var b = businesses.buildings[i]
 		var industry: bool = b.get_meta("industry", i >= 2)
-		place(b, Vector2(bx[i], 710 if industry else 665), 330 if industry else 205)
 		if industry:
-			haze(b.get_node("Artwork"), 0.09)
+			# The works are laid up in two planes rather than in a line: each sits
+			# roughly half behind the next, the back ones standing further up the
+			# yard and carrying more haze. A row with daylight between every building
+			# reads as four separate sheds; overlapping them reads as a works.
+			var behind: bool = i % 2 == 1
+			# Half again the size the works used to be: at the old scale they read as
+			# sheds behind the village rather than as the thing the village works for.
+			place(b, Vector2(bx[i], 672 if behind else 716), 495)
+			b.z_index = -3 if behind else -1
+			haze(b.get_node("Artwork"), 0.15 if behind else 0.07)
+		else:
+			place(b, Vector2(bx[i], 665), 205)
 		b.get_node("NameLabel").hide()
 	var rows: Array = JSON.parse_string(FileAccess.get_file_as_string("res://assets/composition/nobles.json"))
 	for i in range(6):
@@ -53,15 +65,17 @@ func _ready() -> void:
 		tex.filter_clip = true
 		if i < 4:
 			var b := make_building("NobleHouse%d" % (i+1), tex)
-			place(b, Vector2([4320,4580,4830,5080][i], 665 if i < 3 else 625), [265,220,260,245][i])
+			# Larger, and spaced to carry it. The terrace still clears the castle's own
+			# footing, which begins at 5775, so all four houses stay.
+			place(b, Vector2([4320,4630,4930,5230][i], 665 if i < 3 else 625), [310,258,305,287][i])
 			haze(b.get_node("Artwork"), 0.10)
 			noble_houses.append(b)
 		else:
 			var b := Sprite2D.new()
 			b.texture = tex
 			b.centered = false
-			b.scale = Vector2.ONE * (195.0 / tex.get_width())
-			b.position = Vector2(4390+(i-4)*410, 630-tex.get_height()*b.scale.y)
+			b.scale = Vector2.ONE * (228.0 / tex.get_width())
+			b.position = Vector2(4430+(i-4)*440, 630-tex.get_height()*b.scale.y)
 			b.z_index = -5
 			haze(b, 0.17)
 			add_child(b)
