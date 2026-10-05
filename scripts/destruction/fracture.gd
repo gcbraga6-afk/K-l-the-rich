@@ -104,6 +104,9 @@ static func scatter(host: Node, source: Node2D, options: Dictionary) -> int:
 		if painted != null:
 			painted.name = "Skin"
 			body.add_child(painted)
+			# The flat silhouette underneath is the convex hull, wider than the paint
+			# on top of it, and leaving it on fringes every piece in grey.
+			body.show_skin = true
 		host.add_child(body)
 		# A shard has left the building, so it must not prop up the courses above
 		# the crater: otherwise the hole fills with its own rubble and nothing

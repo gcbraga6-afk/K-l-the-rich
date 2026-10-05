@@ -332,3 +332,9 @@ A bala soltava, além do entulho de verdade, 14 retângulos de cor chapada — r
 modelo antigo de explosão. Era isso que aparecia como "destroço cinza" no jogo e não
 na bancada: a bancada chama o recorte direto, sem passar pela cena de explosão.
 Removidos; o recorte já produz entulho com a textura de onde quebrou.
+
+Sobrava ainda uma franja cinza: em dois lugares a lasca ganhava pintura mas seguia
+desenhando a silhueta lisa por baixo, e essa silhueta é o **casco convexo**, mais
+larga que a pintura. Resultado: cada peça com uma borda cinza-azulada em volta.
+Corrigido nas ilhas que desabam e nas lascas que quebram de novo; e a cor de
+reserva, para peça sem pintura nenhuma, passou de azul-ardósia para pedra.

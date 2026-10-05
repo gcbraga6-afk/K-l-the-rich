@@ -14,7 +14,7 @@ const MAX_GENERATION := 2       # how many times stone may be broken down again
 const MIN_SHATTER_AREA := 260.0 # below this a shard is gravel: it scatters, never splits
 
 var owner_structure: Node = null
-var tint := Color("9aafbf")
+var tint := Color("9d9280")
 var shard := PackedVector2Array()
 var generation := 1
 var broken := false

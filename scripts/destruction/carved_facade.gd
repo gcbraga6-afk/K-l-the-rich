@@ -464,9 +464,12 @@ func _fall(polygon: PackedVector2Array) -> void:
 	skin.name = "Skin"
 	skin.polygon = local
 	skin.uv = uv
-	skin.texture = ImageTexture.create_from_image(art)
+	skin.texture = _art_texture
 	skin.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	body.add_child(skin)
+	# The flat silhouette underneath is the convex hull, which is wider than the
+	# paint on top of it, so leaving it on fringes every piece in grey.
+	body.show_skin = true
 	add_child(body)
 
 
