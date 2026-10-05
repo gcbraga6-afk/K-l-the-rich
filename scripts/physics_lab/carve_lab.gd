@@ -46,7 +46,10 @@ func _build() -> void:
 	facade.position = Vector2(820, 0)
 	add_child(facade)
 	var catalog = load("res://scripts/village/house_catalog.gd")
-	facade.setup(catalog.house(2), 430.0, FLOOR_Y)
+	var materials: Texture2D = null
+	if ResourceLoader.exists("res://assets/houses/materials/house_02.png"):
+		materials = load("res://assets/houses/materials/house_02.png")
+	facade.setup(catalog.house(2), 430.0, FLOOR_Y, null, materials)
 
 func fire(velocity: Vector2) -> RigidBody2D:
 	var ball := RigidBody2D.new()

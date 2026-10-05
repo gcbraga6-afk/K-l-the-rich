@@ -278,6 +278,13 @@ A colisão passou a ser por segmentos do contorno em vez de decomposição conve
 Um contorno de silhueta bombardeada pode se auto-intersectar, e o decompositor
 reporta isso como erro de motor — que no editor para o jogo rodando.
 
-Outras pendências: o item do mapa de materiais pintado à mão (janela arrebenta
-inteira, parede em volta fica de pé) não foi feito. E nada disso está no jogo
-ainda — só na bancada. As casas do reino seguem no modelo antigo.
+MAPA DE MATERIAIS — feito, com uma casa mapeada. Um PNG por casa diz do que cada
+parte é feita (telhado, parede, janela, madeira). Janela é achada como mancha
+ligada de pixels e **falha como abertura inteira**: um tiro de raspão no canto leva
+a janela toda e deixa a parede em volta de pé, verificado em teste. O telhado passa
+a vir do mapa em vez do palpite pela linha do beiral. Formato documentado em
+`assets/houses/materials/README.md`. Só `house_02.png` existe; as outras 19 casas
+continuam funcionando sem mapa, tratadas como alvenaria.
+
+PENDÊNCIA: nada disso está no jogo ainda — só na bancada `carve.tscn`. As casas do
+reino seguem no modelo antigo de blocos.

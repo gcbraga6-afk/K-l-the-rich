@@ -20,6 +20,10 @@ const STEP := 3            # mask pixels decided together, to keep a round cheap
 const THROW := 520.0       # how hard a piece at the centre of the blast is hurled
 const LOFT := 0.45         # how much of the throw is turned upwards
 
+# What a part of the building is made of, painted alongside its artwork. Without a
+# map everything is masonry and the roof is found from the silhouette instead.
+enum { NOTHING, WALL, ROOF, WINDOW, TIMBER }
+
 # Painted modules the room is laid up from. Each house draws a different
 # combination, so twenty cottages do not share one interior. Missing files are
 # tolerated: the room falls back to being drawn in code.
@@ -57,9 +61,13 @@ var _standing := 0
 var _mask_bytes := PackedByteArray()   # one byte per pixel: masonry still there
 var _solid_bytes := PackedByteArray()  # rgba, only the alpha byte is used
 var eaves := 0.0      # mask row where the roof ends and the walls begin
+var _material := PackedByteArray()   # one byte per pixel, from the painted map
+var _window_of := PackedInt32Array() # which window opening a pixel belongs to, 0 for none
+var _window_pixels := {}             # opening id -> its pixels
+var _gone_windows := {}              # openings already blown out
 
 
-func setup(texture: Texture2D, width: float, foot_y: float, structure: Node = null) -> void:
+func setup(texture: Texture2D, width: float, foot_y: float, structure: Node = null, materials: Texture2D = null) -> void:
 	owner_structure = structure
 	art = _lift(texture)
 	if art == null:
@@ -86,6 +94,7 @@ func setup(texture: Texture2D, width: float, foot_y: float, structure: Node = nu
 			if opaque:
 				_standing += 1
 	_sync_images()
+	_read_materials(materials)
 	eaves = _find_eaves()
 	_art_texture = ImageTexture.create_from_image(art)
 	_tear_seed = float(hash(str(art.get_size())) % 997)
@@ -116,7 +125,11 @@ func _carve_now(at: Vector2, radius: float) -> void:
 	var r := maxf(radius / pixel, 3.0)
 	var before := _standing_pixels()
 	var taken := []
-	if centre.y < eaves:
+	var probe_index := int(centre.y) * art.get_width() + int(centre.x)
+	var on_roof: bool = centre.y < eaves
+	if probe_index >= 0 and probe_index < _material.size() and _material[probe_index] != NOTHING:
+		on_roof = _material[probe_index] == ROOF
+	if on_roof:
 		# Rafters carry the roof across its whole span. Break them and the span
 		# comes down as a section; it does not keep a tidy round hole punched in it.
 		_collapse_roof(centre.x, r)
@@ -183,6 +196,68 @@ func _collapse_roof(at_x: float, radius: float) -> void:
 	add_child(puff)
 
 
+# Reads the painted material map, if the house has one, and finds each window
+# opening as a connected run of window pixels. An opening fails as a whole: that
+# is the difference between a shell taking out a window and a shell slicing one
+# in half along with the wall it sits in.
+func _read_materials(map: Texture2D) -> void:
+	var w := art.get_width()
+	var h := art.get_height()
+	_material.resize(w * h)
+	_window_of.resize(w * h)
+	if map == null:
+		for i in range(w * h):
+			_material[i] = WALL
+			_window_of[i] = 0
+		return
+	var image := map.get_image()
+	if image.get_size() != Vector2i(w, h):
+		image = image.duplicate()
+		image.resize(w, h, Image.INTERPOLATE_NEAREST)
+	for y in range(h):
+		for x in range(w):
+			var index := y * w + x
+			_window_of[index] = 0
+			var colour := image.get_pixel(x, y)
+			if colour.a < 0.3:
+				_material[index] = NOTHING
+			elif colour.b > 0.5 and colour.b > colour.r + 0.2:
+				_material[index] = WINDOW
+			elif colour.r > 0.5 and colour.g < 0.45 and colour.b < 0.4:
+				_material[index] = ROOF
+			elif colour.r > 0.4 and colour.g > 0.25 and colour.b < 0.35:
+				_material[index] = TIMBER
+			else:
+				_material[index] = WALL
+	_find_windows(w, h)
+
+
+func _find_windows(w: int, h: int) -> void:
+	var next_id := 0
+	for start in range(w * h):
+		if _material[start] != WINDOW or _window_of[start] != 0:
+			continue
+		next_id += 1
+		var pixels := []
+		var queue := [start]
+		_window_of[start] = next_id
+		while not queue.is_empty():
+			var index: int = queue.pop_back()
+			pixels.append(index)
+			var x := index % w
+			var y := index / w
+			for step: Vector2i in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+				var nx: int = x + step.x
+				var ny: int = y + step.y
+				if nx < 0 or ny < 0 or nx >= w or ny >= h:
+					continue
+				var near := ny * w + nx
+				if _material[near] == WINDOW and _window_of[near] == 0:
+					_window_of[near] = next_id
+					queue.append(near)
+		_window_pixels[next_id] = pixels
+
+
 func standing_ratio() -> float:
 	if art == null:
 		return 0.0
@@ -203,6 +278,7 @@ func _punch(centre: Vector2, radius: float) -> Array:
 # bite to one part of the building.
 func _erode(centre: Vector2, radius: float, lift: float, top: int, floor_row := -1) -> Array:
 	var taken := []
+	var touched := {}
 	var bottom: int = mask.get_height() if floor_row < 0 else mini(floor_row, mask.get_height())
 	# Both bounds wander: a bite that stops dead along one row is the horizontal
 	# straight edge that gave the damage its geometric look.
@@ -232,8 +308,11 @@ func _erode(centre: Vector2, radius: float, lift: float, top: int, floor_row := 
 			var t := sqrt(dx2 + dy * dy)
 			if t > 1.45:
 				continue
-			if _mask_bytes[y * width + x] == 0:
+			var probe := y * width + x
+			if _mask_bytes[probe] == 0:
 				continue
+			if _window_of[probe] != 0:
+				touched[_window_of[probe]] = true
 			var torn := t + _tear(x, y) * 0.5 - 0.22
 			if torn > 1.0 + RIM / radius:
 				continue
@@ -252,6 +331,24 @@ func _erode(centre: Vector2, radius: float, lift: float, top: int, floor_row := 
 						_mask_bytes[index] = 0
 					else:
 						_mask_bytes[index] = mini(_mask_bytes[index], 102)
+	# Glass and its frame go together. A shell takes a window out; it does not cut
+	# one in half and leave the other half hanging in the wall.
+	for opening in touched:
+		taken.append_array(_blow_window(opening))
+	return taken
+
+
+func _blow_window(opening: int) -> Array:
+	if _gone_windows.has(opening) or not _window_pixels.has(opening):
+		return []
+	_gone_windows[opening] = true
+	var taken := []
+	for index in _window_pixels[opening]:
+		_mask_bytes[index] = 0
+		if _solid_bytes[index * 4 + 3] > 127:
+			_solid_bytes[index * 4 + 3] = 0
+			_standing -= 1
+			taken.append(Vector2(index % art.get_width(), index / art.get_width()))
 	return taken
 
 
