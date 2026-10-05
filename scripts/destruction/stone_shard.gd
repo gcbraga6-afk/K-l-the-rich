@@ -51,12 +51,20 @@ func _physics_process(delta: float) -> void:
 	# Damping is for settling, so it only builds while the piece is resting on
 	# something. Ramped in flight it slows a thrown piece to a hover, and the
 	# deadline below then freezes it there, hanging in the sky.
+	# A body is allowed to sleep only once it is resting. Asleep in the air it stops
+	# being simulated and simply hangs there, which is what a piece does at the top
+	# of its arc, where its velocity passes through almost nothing.
+	can_sleep = touching
 	if touching:
 		linear_damp = 0.3 + _age * 0.9
 		angular_damp = 2.4 + _age * 1.6
+		gravity_scale = 1.0
 	else:
-		linear_damp = 0.3
+		linear_damp = 0.0
 		angular_damp = 2.4
+		# Masonry falls like masonry. At plain gravity, with the arc a blast throws
+		# it on, a fragment hangs in the air long enough to read as weightless.
+		gravity_scale = 1.6
 	var speed := linear_velocity.length()
 	_peak = maxf(_peak * 0.96, speed)
 	if touching:
