@@ -345,6 +345,14 @@ pinta retângulos cinza-oliva no nível da rua, e que **lojas e fábricas** aind
 usavam por estarem no modelo antigo. Comércio e indústria passaram para o recorte
 também, então a rua inteira quebra do mesmo jeito.
 
-A bala detonava no ar: a camada de entulho estava na máscara de colisão dela, então
-ela explodia nos destroços do tiro anterior ainda caindo. Removida — o estouro já
-sacode o entulho dentro do raio, então nada se perde.
+A bala detonava no ar, por **duas** causas somadas:
+1. a camada de entulho estava na máscara de colisão dela, então explodia nos
+   destroços do tiro anterior ainda caindo. Removida — o estouro já sacode o
+   entulho dentro do raio, nada se perde;
+2. a bala **não tinha camada própria**, ficando na camada 1, a mesma do terreno
+   que ela deve acertar. Com a máscara incluindo a camada 1, **duas balas em voo
+   colidiam uma com a outra** e as duas detonavam em céu aberto. Agora a bala tem
+   camada 2. Guardado por `tests/crossfire_check.tscn`, que dispara uma rasante
+   atrás de uma alta e exige que nenhuma detone acima da linha dos telhados nem
+   contra outra bala. O Flash também só enxerga o chão; quem acha alvenaria é o
+   sensor dele.

@@ -12,6 +12,10 @@ var _has_impacted := false
 
 func _ready() -> void:
 	add_to_group("active_projectiles")
+	# Rounds carry a layer of their own. Left on the default they share one with the
+	# terrain they are meant to hit, so two in flight collide with each other and
+	# both go off in the open sky.
+	collision_layer = 2
 	# Terrain and masonry only. Rubble is scenery, not a target: with the debris
 	# layer in here a round detonates in mid air on whatever the last one threw up.
 	# A blast still stirs any rubble inside its radius, so nothing is lost.
@@ -22,7 +26,9 @@ func _ready() -> void:
 	else:
 		# Flash detects masonry without physically pushing it like a cannonball.
 		collision_layer = 32
-		collision_mask = 1 | 8
+		# The sensor below is what finds masonry. The body itself only has to notice
+		# the ground, never other rounds and never rubble.
+		collision_mask = 1
 		var sensor := Area2D.new()
 		sensor.collision_layer = 0
 		sensor.collision_mask = 16
