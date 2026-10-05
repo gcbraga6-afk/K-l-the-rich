@@ -46,18 +46,20 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	_age += delta
-	# Settling, not stopping dead: the piece gets heavier to move the longer it has
-	# been loose, so it slides to a halt instead of twitching forever.
-	linear_damp = 0.3 + _age * 0.9
-	angular_damp = 2.4 + _age * 1.6
-	if _age > 5.0:
-		freeze = true
-		set_physics_process(false)
-		return
 	angular_velocity = clampf(angular_velocity, -4.0, 4.0)
+	var touching := get_contact_count() > 0
+	# Damping is for settling, so it only builds while the piece is resting on
+	# something. Ramped in flight it slows a thrown piece to a hover, and the
+	# deadline below then freezes it there, hanging in the sky.
+	if touching:
+		linear_damp = 0.3 + _age * 0.9
+		angular_damp = 2.4 + _age * 1.6
+	else:
+		linear_damp = 0.3
+		angular_damp = 2.4
 	var speed := linear_velocity.length()
 	_peak = maxf(_peak * 0.96, speed)
-	if get_contact_count() > 0:
+	if touching:
 		if not _landed and _peak > 120.0:
 			_landed = true
 			_raise_dust(0.45)
@@ -67,10 +69,15 @@ func _physics_process(delta: float) -> void:
 			_quiet = 0.0
 	else:
 		_quiet = 0.0
-	if _quiet > 0.9:
+	# A piece becomes scenery where it came to rest, never in the air. The deadline
+	# is for rubble that creeps or jitters on the ground and never quite satisfies
+	# the quiet test; one still in flight goes on falling.
+	if _quiet > 0.9 or (_age > 5.0 and touching):
 		freeze = true
 		set_physics_process(false)
-	if global_position.y > 2200.0:
+	# Gone off the map, or still airborne long after any sane arc: either way it is
+	# no longer part of the scene.
+	if global_position.y > 2200.0 or _age > 20.0:
 		queue_free()
 
 # Rubble is not scenery: a round landing in it wakes it, moves it, knocks dust

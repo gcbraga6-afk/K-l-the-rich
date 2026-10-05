@@ -368,3 +368,16 @@ A bala detonava no ar, por **duas** causas somadas:
 - Indústria **50% maior** (330 para 495) e montada em dois planos: cada prédio fica
   cerca de metade atrás do seguinte, os de trás mais acima no pátio, com z menor e
   mais névoa. Em fila, com luz entre todos, lia como quatro galpões soltos.
+
+### Destroço congelado no céu — 2026-10-05
+
+Bug encontrado pelo usuário, com foto: depois de um tiro ficavam peças paradas no
+ar, às vezes dezenas. A causa era o próprio assentamento que eu tinha escrito: o
+amortecimento crescia com o tempo que a peça estava solta, **inclusive em voo**,
+então uma peça arremessada para cima freava até quase parar; e o prazo final de
+5 s congelava a peça onde quer que ela estivesse.
+
+Agora o amortecimento só cresce enquanto a peça está encostada em algo, e o prazo
+final só congela peça apoiada. Peça ainda no ar continua caindo, e some se passar
+20 s sem assentar. Guardado por `tests/settling_check.tscn`, que bombardeia uma
+casa e exige zero peças congeladas acima da linha dos telhados.
