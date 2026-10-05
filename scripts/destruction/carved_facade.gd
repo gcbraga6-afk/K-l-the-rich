@@ -17,6 +17,8 @@ const MASK_SHADER = preload("res://scripts/effects/facade_mask.gdshader")
 const GROUND_TOL := 10.0   # distance from the footing still counted as standing on it
 const RIM := 3.0           # pixels of scorched edge around every hole
 const STEP := 3            # mask pixels decided together, to keep a round cheap
+const THROW := 520.0       # how hard a piece at the centre of the blast is hurled
+const LOFT := 0.45         # how much of the throw is turned upwards
 
 # Painted modules the room is laid up from. Each house draws a different
 # combination, so twenty cottages do not share one interior. Missing files are
@@ -172,9 +174,9 @@ func _collapse_roof(at_x: float, radius: float) -> void:
 			Vector2(-span * 1.8, span * 0.40)])
 		# A roof falls in on itself: the span drops into the room, it does not burst
 		# outwards like something thrown.
-		_debris(slab, seed_point,
-			Vector2(rng.randf_range(-45.0, 45.0), rng.randf_range(30.0, 150.0)),
-			Color("a8603f"), 0.7)
+		# Near the hit the span is thrown clear; further along it simply drops in.
+		var thrown := _hurl(seed_point, Vector2(at_x, eaves * 0.86), radius * 1.3, rng)
+		_debris(slab, seed_point, thrown + Vector2(0.0, rng.randf_range(40.0, 120.0)), Color("a8603f"), 0.7)
 	var puff := DustPuff.new()
 	puff.configure(1.4, Color("b3a994"))
 	puff.position = base_offset + Vector2(at_x, eaves * 0.6) * pixel
@@ -344,9 +346,7 @@ func _spill(at: Vector2, radius: float, removed: int, taken: Array) -> void:
 			chunk.append(Vector2.RIGHT.rotated(angle) * size * rng.randf_range(0.7, 1.3))
 		# Cut from a spot the blast actually took, so the chunk carries that paint.
 		var from: Vector2 = taken[rng.randi_range(0, taken.size() - 1)] if not taken.is_empty() else _to_mask(at)
-		_debris(chunk, from,
-			Vector2(rng.randf_range(-150.0, 150.0), rng.randf_range(-260.0, -60.0)),
-			Color("9d9280"), 1.0)
+		_debris(chunk, from, _hurl(from, _to_mask(at), radius / pixel, rng), Color("9d9280"), 1.0)
 	var puff := DustPuff.new()
 	puff.configure(clampf(float(removed) / 2600.0, 0.5, 1.5), Color("b3a994"))
 	puff.position = to_local(at)
@@ -356,6 +356,22 @@ func _spill(at: Vector2, radius: float, removed: int, taken: Array) -> void:
 # One piece of the building, cut from the facade's own pixels so a tile falls
 # looking like a tile and plaster falls looking like plaster. Flat colour is what
 # made the rubble read as plastic.
+# Velocity for a piece leaving the building: away from where the round went off,
+# hardest at the centre and falling away with distance, lifted so it arcs rather
+# than skidding along the wall. Gravity takes over from there.
+func _hurl(origin_px: Vector2, blast_px: Vector2, radius: float, rng: RandomNumberGenerator) -> Vector2:
+	var away := origin_px - blast_px
+	var distance := away.length()
+	if distance < 0.001:
+		away = Vector2(rng.randf_range(-1.0, 1.0), -1.0)
+		distance = 1.0
+	away = away.normalized()
+	# Straight up carries nothing sideways, so the lift is added rather than aimed.
+	away = (away + Vector2.UP * LOFT).normalized()
+	var fade: float = clampf(1.0 - distance / maxf(radius * 1.7, 1.0), 0.15, 1.0)
+	return away * THROW * fade * rng.randf_range(0.65, 1.25)
+
+
 func _debris(shape: PackedVector2Array, origin_px: Vector2, velocity: Vector2, colour: Color, weight: float) -> void:
 	var body := RigidBody2D.new()
 	body.set_script(Shard)

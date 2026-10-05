@@ -261,6 +261,10 @@ Visual aprovado pelo usuário na bancada `scenes/physics_lab/carve.tscn`.
   são espelhadas para a repetição não ler como papel de parede.
 - Escombro carrega a textura de onde quebrou, e assenta: amortecimento cresce com
   o tempo solto, com prazo final. Tiro novo quebra entulho já caído.
+- A explosão **arremessa**: cada peça sai na direção oposta ao ponto do estouro,
+  com força caindo pela distância e com elevação somada, para arcar em vez de
+  raspar a parede. A gravidade assume depois. Entulho já no chão também é jogado
+  para cima e para fora, não empurrado rente ao solo.
 
 DESEMPENHO — resolvido. Cada tiro caiu de ~170 ms para ~23 ms, abaixo de dois
 quadros. O que rendeu, em ordem: contagem incremental em vez de varrer a imagem;

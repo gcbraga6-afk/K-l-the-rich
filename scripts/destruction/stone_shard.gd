@@ -95,12 +95,15 @@ func disturb(center: Vector2, energy: float) -> void:
 	if away.length() < 1.0:
 		away = Vector2.UP
 	away = away.normalized()
+	# Lifted as well as pushed, so a heap is thrown up and out by a blast instead of
+	# being shoved along the ground.
+	var thrown := (away + Vector2.UP * 0.5).normalized()
 	if generation < MAX_GENERATION and energy > 0.3 and Fracture.area(shard) > MIN_SHATTER_AREA:
-		_break(away * 300.0 * energy, to_local(center))
+		_break(thrown * 520.0 * energy, to_local(center))
 		return
 	# Too small or too far to split: it is thrown and sheds dust instead. The
 	# physics server is only touched once its query flush is over.
-	_rouse.call_deferred(away * 260.0 * energy, energy)
+	_rouse.call_deferred(thrown * 470.0 * energy, energy)
 
 func _rouse(push: Vector2, energy: float) -> void:
 	freeze = false
