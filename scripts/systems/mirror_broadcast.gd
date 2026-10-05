@@ -1,12 +1,17 @@
 extends Node2D
 
+# The Kingdom speaks through the mirror, and the mirror never reports damage. Every
+# round the Knight fires comes back as a threat to the people and as proof that the
+# Crown holds. It is written in the Kingdom's own voice, addressed to its subjects.
+const IDLE := "The Kingdom watches\nover its subjects."
+
 var mirror: StaticBody2D
 var society: Node
 var viewport: SubViewport
 var screen: Polygon2D
 var message: Label
 var headline: Label
-var current_message := "O Reino vela\npor seus súditos."
+var current_message := IDLE
 var pending: Array[Dictionary] = []
 var remaining := 0.0
 var active_event: Dictionary = {}
@@ -26,7 +31,7 @@ func _ready() -> void:
 	headline.position = Vector2(24, 22)
 	headline.size = Vector2(592, 48)
 	headline.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	headline.text = "VOZ DO REINO"
+	headline.text = "VOICE OF THE KINGDOM"
 	headline.add_theme_font_size_override("font_size", 28)
 	headline.add_theme_color_override("font_color", Color("e9c77b"))
 	viewport.add_child(headline)
@@ -47,12 +52,30 @@ func _ready() -> void:
 	var origin := Vector2(-art.house_width / 2, base - art.house_texture.get_height() * factor)
 	# Inner glass corners of the approved asset, minus the atlas crop origin.
 	var corners := PackedVector2Array([Vector2(130,470), Vector2(987,360), Vector2(987,961), Vector2(130,925)])
-	# Packed arrays are copy-on-write: assign the completed polygon explicitly.
-	var polygon := PackedVector2Array()
+	var glass := PackedVector2Array()
 	for corner in corners:
-		polygon.append(origin + (corner - Vector2(5,83)) * factor)
+		glass.append(origin + (corner - Vector2(5,83)) * factor)
+	# The board is painted in perspective: its right edge stands 601 pixels tall against
+	# 455 on the left. Stretched across that shape as a single quad, the text bends --
+	# Godot cuts a quad into two triangles and maps the texture across each on its own,
+	# so the writing kinks along the diagonal seam. Cut into narrow vertical strips
+	# instead, every strip is near enough a rectangle for that seam to vanish, and the
+	# line of text runs straight into the distance the way the frame around it does.
+	const STRIPS := 56
+	var polygon := PackedVector2Array()
+	var mapping := PackedVector2Array()
+	var faces := []
+	for i in range(STRIPS + 1):
+		var along := float(i) / float(STRIPS)
+		polygon.append(glass[0].lerp(glass[1], along))
+		mapping.append(Vector2(640.0 * along, 0.0))
+		polygon.append(glass[3].lerp(glass[2], along))
+		mapping.append(Vector2(640.0 * along, 360.0))
+	for i in range(STRIPS):
+		faces.append(PackedInt32Array([i * 2, i * 2 + 2, i * 2 + 3, i * 2 + 1]))
 	screen.polygon = polygon
-	screen.uv = PackedVector2Array([Vector2(0,0), Vector2(640,0), Vector2(640,360), Vector2(0,360)])
+	screen.uv = mapping
+	screen.polygons = faces
 	screen.texture = viewport.get_texture()
 	screen.z_index = 2
 	add_child(screen)
@@ -74,7 +97,7 @@ func _process(delta: float) -> void:
 			delivered = false
 		else:
 			active_event = {}
-			current_message = "O Reino vela\npor seus súditos."
+			current_message = IDLE
 		message.text = current_message
 	if not active_event.is_empty() and not delivered:
 		delivered = true
@@ -90,17 +113,17 @@ func _on_event(event: Dictionary) -> void:
 	var text := ""
 	if kind in ["STRUCTURE_HIT", "STRUCTURE_DESTROYED"]:
 		if target == "Mirror":
-			text = "Atacaram a voz\ndo Reino."
+			text = "They strike at the\nvoice of the Kingdom.\nIt is not silenced."
 		elif target.begins_with("VillageHouse"):
-			text = "Casas atingidas.\nO Cavaleiro ameaça\nnossas famílias."
+			text = "Your homes are struck.\nThe Knight makes war\non your families."
 		elif target == "Castle" or target.begins_with("NobleHouse"):
-			text = "A Coroa está\nsob ataque."
+			text = "The Crown is attacked\nand the Crown stands."
 		else:
-			text = "O ataque ameaça\no trabalho\ndo Reino."
+			text = "He strikes at your\nlabour, and calls it\nstriking at us."
 	elif kind == "SOLDIER_DISORGANIZED":
-		text = "Guardas atingidos.\nA Coroa pede\ncalma."
+		text = "Your guards are hurt\nshielding you.\nRemain calm."
 	elif kind == "RESERVOIR_OPENED":
-		text = "Água liberada.\nA Coroa pede\nordem nas filas."
+		text = "The Crown grants water.\nForm your lines\nin good order."
 	if text.is_empty():
 		return
 	if current_message == text:

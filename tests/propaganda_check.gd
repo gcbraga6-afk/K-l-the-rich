@@ -23,7 +23,7 @@ func run() -> void:
 	assert(social.king_prestige.Workers < before)
 	assert(worker.social_alarm > 0 and worker.fear_seconds > 0)
 	broadcast._process(0.1)
-	assert(broadcast.current_message.contains("Casas atingidas"))
+	assert(broadcast.current_message.contains("Your homes are struck"))
 	assert(broadcast.pending.is_empty())
 	var count: int = social.broadcast_count
 	broadcast._process(0.1)
@@ -32,7 +32,7 @@ func run() -> void:
 	guard.react_to_blast(guard.global_position, "Flash")
 	assert(social.cohesion < 85)
 	broadcast._process(13)
-	assert(broadcast.current_message.contains("Guardas atingidos"))
+	assert(broadcast.current_message.contains("Your guards are hurt"))
 	mirror.apply_explosion_damage(99, mirror.global_position)
 	broadcast._process(0.1)
 	assert(not broadcast.screen.visible)
