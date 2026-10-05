@@ -381,3 +381,24 @@ Agora o amortecimento só cresce enquanto a peça está encostada em algo, e o p
 final só congela peça apoiada. Peça ainda no ar continua caindo, e some se passar
 20 s sem assentar. Guardado por `tests/settling_check.tscn`, que bombardeia uma
 casa e exige zero peças congeladas acima da linha dos telhados.
+
+### Segunda rodada: a peça caía devagar — 2026-10-05
+
+O usuário olhou de novo: "melhorou mas continua um pouco e dá uma desacelerada e o
+fragmento cai devagar". Faltava metade do conserto. Tirar a rampa de amortecimento
+do voo não é o mesmo que tirar o amortecimento do voo — a peça no ar ainda
+arrastava com 0.3, e com gravidade de brinquedo. Medido: 445 px/s depois de meio
+segundo de ar livre, onde só a gravidade daria perto de 490. Agora, no ar, arrasto
+zero e peso de alvenaria (`gravity_scale = 1.6`): 765 px/s.
+
+Também deixei de permitir que a peça adormeça no ar, porque corpo adormecido não é
+simulado e fica pendurado. **Essa parte não tem teste.** A sonda não consegue
+alcançar o limiar de sono da Godot no topo do arco, onde a velocidade passa por
+quase nada só por um instante.
+
+E o aviso que eu mesmo escrevi acima, de que o bug estava "guardado por
+`tests/settling_check.tscn`", era falso. Rodei aquele teste com o conserto e com o
+bug de volta: saída idêntica, byte a byte. Ele verificava que o entulho para de se
+mexer, e o entulho parava — só que no céu. Reescrito para soltar uma peça e medir a
+queda, agora passa com 765 e falha com 445. Desde então passei a conferir cada
+teste revertendo o conserto antes de dizer que ele guarda algo.
