@@ -402,3 +402,43 @@ bug de volta: saída idêntica, byte a byte. Ele verificava que o entulho para d
 mexer, e o entulho parava — só que no céu. Reescrito para soltar uma peça e medir a
 queda, agora passa com 765 e falha com 445. Desde então passei a conferir cada
 teste revertendo o conserto antes de dizer que ele guarda algo.
+
+### Câmera lenta e fragmento no céu: três causas, nenhuma era a óbvia — 2026-10-05
+
+Aprovado pelo usuário ("destruição tá muito boa"). O relato era fragmento parado
+no ar e queda em câmera lenta. Gastei três tentativas em amortecimento e gravidade
+antes de medir, e **nenhuma delas era a causa**.
+
+1. **A física rodava a 120 Hz** e o passo não cabia no tique. Quando o motor não
+   consegue entregar os tiques, o relógio da física fica atrás do relógio real: não
+   era o fragmento caindo devagar, era o jogo inteiro rodando devagar. O projétil usa
+   `CCD_MODE_CAST_SHAPE`, então a taxa alta nunca foi o que o impedia de atravessar
+   parede. Agora 60 Hz.
+
+2. **O teto de estilhaços nunca existiu.** Era aplicado só em `Fracture.scatter`,
+   enquanto outros dois caminhos criavam pedra por fora — e o maior deles era
+   `_drop_unsupported`, onde cada ilha de alvenaria que o buraco corta da parede vira
+   um corpo próprio. Só achei instrumentando o portão: 82 peças vivas numa chamada,
+   198 na seguinte. Agora os três caminhos passam pelo mesmo portão. Vivas: 186 → 85.
+   Corpos simulados: 205 → 104.
+
+3. **O solver lançava peça a 16.545 px/s** contra um canhão que arremessa a 520,
+   porque a peça nasce interpenetrada na fachada, cuja colisão é de segmentos e não
+   tem "dentro" de onde empurrar. Trinta vezes a energia faz a peça cruzar meio reino
+   e ficar quase imóvel no topo do arco — era isso que lia como parada no céu.
+   Limitar a velocidade limitava a queda junto, então o que é limitado agora é o
+   **salto**: a gravidade acrescenta ~33 px/s por passo, o estouro acrescenta milhares.
+
+Causa raiz ainda aberta: a peça nascer sobreposta à fachada. O limite de salto trata
+o sintoma bem, mas a cura é o nascimento não interpenetrar.
+
+Armadilha da engine que me custou duas correções erradas: **decisão diferida não vale
+como estado no mesmo quadro.** `queue_free()` deixa o nó no grupo até o fim do quadro
+e `set_deferred("freeze", true)` deixa a peça lendo `freeze == false`. Como uma
+explosão chama o portão várias vezes no mesmo quadro, a contabilidade tem que usar
+campo próprio marcado na hora (`retired`), não o estado diferido.
+
+Sobre os testes: o de orçamento julgava milissegundos, que mediram 13,2 / 21,1 / 27,0
+na mesma cena conforme a carga da máquina — veredito em cara ou coroa. Passou a julgar
+contagem de corpos, que é determinística. E `assert` que falha trava a bateria inteira
+(o script para, o processo não encerra), então ele imprime FAIL e encerra.
