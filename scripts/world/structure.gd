@@ -23,7 +23,17 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	if _shake_seconds <= 0.0:
-		position = _base_position
+		# Only when it has actually drifted. Writing this every frame, even when the
+		# value is already correct, marks the transform dirty, and Godot answers that
+		# by forcing every RigidBody2D under this node back onto its parent's frame.
+		# The rubble of a carved building hangs off the building, so each piece was
+		# teleported to where it started, every frame, for as long as it lived: traced,
+		# a shard's velocity integrated perfectly -- 1020, 987, 954, falling by exactly
+		# one tick of gravity -- while its position never left 486. That is the
+		# fragment stopped in the sky, and no amount of work on sleep, damping,
+		# gravity, collision or speed ceilings could reach it.
+		if position != _base_position:
+			position = _base_position
 		return
 
 	_shake_seconds = maxf(0.0, _shake_seconds - delta)
