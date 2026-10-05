@@ -23,6 +23,22 @@ const SETTLE_BY := 9.0          # seconds on the ground after which a piece is s
 # the absolute ceiling is left high enough that it only catches what escapes that.
 const MAX_JOLT := 620.0
 const MAX_SPEED := 1800.0
+# Rubble piles up, so a piece does collide with other pieces -- but not at birth.
+# Shards are cut from neighbouring spots on the same wall, so they are born inside one
+# another, and the solver answers interpenetration with separation impulses it keeps
+# reapplying. Measured, eighty pieces locked into a mutual jam that held itself up in
+# open air: in contact, damping at 8.9, shaking at 109 px/s without moving a pixel.
+# By the time a piece has flown this long it is clear of its neighbours, and from then
+# on it stacks with them the way broken stone should.
+#
+# Collision with the world is never delayed, because a piece is born inside the wall
+# it was cut from: switching that collision on by a timer only traps it there instead,
+# pegged at the speed ceiling with its motion cancelled every frame. What keeps it
+# free is a standing exception against its own facade, granted at birth and renewed
+# whenever that facade rebuilds its collision.
+const MINGLE := 0.9         # clear of the pieces it was cut beside
+const WORLD_MASK := 1
+const RUBBLE_MASK := 1 | 8
 
 var owner_structure: Node = null
 var tint := Color("9d9280")
@@ -46,6 +62,13 @@ var _landed := false
 
 func _ready() -> void:
 	add_to_group("stone_shards")
+	# Born inside the wall it is a piece of, so for its first instants it collides
+	# with other rubble only. The building's own collision is rebuilt on every carve,
+	# so an exception granted at birth can go stale within the same round; this does
+	# not. Without it the piece starts interpenetrating the facade, and the solver
+	# either hurls it away or jams it there, shaking in place against the standing
+	# wall. Mirrors what structural_debris already does for the same reason.
+	collision_mask = WORLD_MASK
 	# Shards are small, slow and numerous. Shape-cast CCD on hundreds of them
 	# costs far more than the tunnelling it would prevent, and a shard that never
 	# sleeps keeps the solver busy long after it has come to rest.
@@ -53,7 +76,12 @@ func _ready() -> void:
 	freeze_mode = RigidBody2D.FREEZE_MODE_STATIC
 	linear_damp = 0.3
 	angular_damp = 2.4
-	can_sleep = true
+	# Never. A sleeping body keeps the velocity it had and stops being moved at all,
+	# so a piece whose speed passes through almost nothing -- which is what happens at
+	# the top of its arc -- stops dead in the sky with its speed still on the books.
+	# A piece that has truly come to rest is retired by freezing it, which costs the
+	# solver nothing; sleep is not needed for that and only buys this fault.
+	can_sleep = false
 	contact_monitor = true
 	max_contacts_reported = 4
 	var stone := PhysicsMaterial.new()
@@ -77,11 +105,9 @@ func _physics_process(delta: float) -> void:
 		linear_velocity = linear_velocity.normalized() * (_was_going + MAX_JOLT)
 	linear_velocity = linear_velocity.limit_length(MAX_SPEED)
 	_was_going = linear_velocity.length()
+	if collision_mask != RUBBLE_MASK and _age > MINGLE:
+		collision_mask = RUBBLE_MASK
 	var touching := get_contact_count() > 0
-	# A body is allowed to sleep only once it is resting. Asleep in the air it stops
-	# being simulated and simply hangs there, which is what a piece does at the top
-	# of its arc, where its velocity passes through almost nothing.
-	can_sleep = touching
 	if touching:
 		# Settling time runs from the moment the piece lands, not from the blast.
 		# Counted from the blast, a piece that spent a second in the air came down
@@ -117,9 +143,16 @@ func _physics_process(delta: float) -> void:
 	# is for rubble that creeps or jitters on the ground and never quite satisfies
 	# the quiet test; one still in flight goes on falling. It counts from landing,
 	# so a piece thrown far still gets its full time on the ground.
-	if _quiet > 1.2 or (_rest > SETTLE_BY and is_down()):
+	# Three ways to become scenery. Quiet is the clean one. The deadline is for rubble
+	# that never goes quiet because it grinds against its neighbours -- pieces are born
+	# inside one another and the solver keeps nudging them apart, which measured about
+	# 109 px/s of shake that never decays. Nine seconds in contact at a crawl is a
+	# piece that has arrived, however much it is still twitching; without this the
+	# rubble stayed live for ever and the budget never freed a slot.
+	if _quiet > 1.2 or (_rest > SETTLE_BY and speed < 160.0) or (retired and is_down()):
 		retired = true
 		freeze = true
+		contact_monitor = false
 		set_physics_process(false)
 	# Gone off the map, or still airborne long after any sane arc: either way it is
 	# no longer part of the scene.
@@ -141,10 +174,13 @@ func is_down() -> bool:
 # The physics server refuses state changes during its own query flush, so this is
 # allowed to land on the next idle frame.
 func settle() -> void:
+	# Retired from the budget's books at once, but turned to stone only once the piece
+	# confirms for itself that it is still lying down. Freezing it here raced the
+	# blast: when a round shook a resting piece, the throw and this retirement were
+	# both deferred to the same frame, and whichever landed second won. Retirement
+	# landing second froze the piece just after it was launched -- it rose, and
+	# stopped, in open air.
 	retired = true
-	set_deferred("freeze", true)
-	set_deferred("contact_monitor", false)
-	set_physics_process(false)
 
 
 # Rubble is not scenery: a round landing in it wakes it, moves it, knocks dust
@@ -183,6 +219,7 @@ func _rouse(push: Vector2, energy: float) -> void:
 	retired = false
 	freeze = false
 	sleeping = false
+	can_sleep = false
 	_quiet = 0.0
 	_age = 0.0
 	# Shaken loose again, it gets its full settling time back rather than landing

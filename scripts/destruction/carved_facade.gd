@@ -481,6 +481,7 @@ func _fall(polygon: PackedVector2Array) -> void:
 	# paint on top of it, so leaving it on fringes every piece in grey.
 	body.show_skin = true
 	add_child(body)
+	_let_it_fall_clear(body)
 
 
 # What the wall lost piles up at its foot.
@@ -555,6 +556,7 @@ func _debris(shape: PackedVector2Array, origin_px: Vector2, velocity: Vector2, c
 	body.add_child(skin)
 	body.show_skin = true
 	add_child(body)
+	_let_it_fall_clear(body)
 	body.linear_velocity = velocity
 	body.angular_velocity = randf_range(-2.0, 2.0)
 
@@ -590,6 +592,10 @@ func _polygon_area(polygon: PackedVector2Array) -> float:
 func _rebuild_collision(shapes: Array) -> void:
 	if _collider != null:
 		_collider.queue_free()
+	# A piece cut out of this wall must never collide with it: it is born inside it.
+	# The collision is rebuilt on every carve, so the standing exceptions are renewed
+	# here, or a piece granted one at birth finds itself trapped in the new geometry.
+	_renew_exceptions.call_deferred()
 	_collider = StaticBody2D.new()
 	_collider.collision_layer = 1
 	_collider.collision_mask = 0
@@ -757,3 +763,26 @@ func _lift(texture: Texture2D) -> Image:
 	if texture == null:
 		return null
 	return texture.get_image()
+
+
+# A piece cut out of the wall is born inside the wall: it is the wall. Left to
+# collide with the facade it came from, it is interpenetrating from its first frame,
+# and the solver has no inside to push it out of because that collision is built from
+# segments. Measured, that produced two faults at once -- separation impulses hurling
+# fragments at 16500 px/s against a cannon that throws at 520, and pieces jammed
+# against the standing wall high above the street, in contact, damping climbing to
+# 8.9, shaking in place and never falling. Those are the coloured chunks that rise
+# and stop in the sky. So a new piece simply ignores the building it broke off.
+func _let_it_fall_clear(body: RigidBody2D) -> void:
+	if _collider != null and is_instance_valid(_collider):
+		body.add_collision_exception_with(_collider)
+	if owner_structure != null and is_instance_valid(owner_structure) and owner_structure is CollisionObject2D:
+		body.add_collision_exception_with(owner_structure)
+
+
+func _renew_exceptions() -> void:
+	if _collider == null or not is_instance_valid(_collider):
+		return
+	for child in get_children():
+		if child is RigidBody2D:
+			child.add_collision_exception_with(_collider)
