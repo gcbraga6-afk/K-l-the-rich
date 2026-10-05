@@ -24,7 +24,8 @@ func configure(radius: float, strength := 1.0) -> void:
 	z_as_relative = false
 	z_index = 7
 	_reach = radius
-	_life = 0.9 + strength * 0.5
+	# Long enough for the smoke, which outlives the flame by a good margin.
+	_life = 1.6 + strength * 0.9
 	var rng := RandomNumberGenerator.new()
 	for i in range(int(16 + strength * 16)):
 		var angle := rng.randf_range(0.0, TAU)
@@ -36,12 +37,15 @@ func configure(radius: float, strength := 1.0) -> void:
 		})
 	for i in range(10):
 		var angle := rng.randf_range(0.0, TAU)
+		# Each puff thins on its own clock and at its own moment. One shared
+		# lifetime makes the whole column vanish between two frames.
 		_smoke.append({
 			"at": Vector2.RIGHT.rotated(angle) * radius * rng.randf_range(0.0, 0.5),
 			"velocity": Vector2.RIGHT.rotated(angle) * rng.randf_range(10.0, 50.0) + Vector2(0, -rng.randf_range(20.0, 60.0)),
 			"radius": radius * rng.randf_range(0.2, 0.45),
 			"grow": radius * rng.randf_range(0.3, 0.7),
 			"lag": rng.randf_range(0.04, 0.3),
+			"life": _life * rng.randf_range(0.5, 1.0),
 		})
 
 
@@ -83,9 +87,12 @@ func _draw() -> void:
 	for puff in _smoke:
 		if _age < puff.lag:
 			continue
-		var fade: float = clampf(1.0 - (_age - puff.lag) / maxf(_life - puff.lag, 0.01), 0.0, 1.0)
+		var left: float = 1.0 - (_age - puff.lag) / maxf(puff.life, 0.01)
+		if left <= 0.0:
+			continue
 		var colour := SMOKE
-		colour.a = fade * 0.42
+		# Eased out, so the column thins and disperses rather than switching off.
+		colour.a = clampf(left * left * 0.46, 0.0, 0.46)
 		draw_circle(puff.at, puff.radius, colour)
 	# The flame is brief and layered: a dark body, a bright middle and a white
 	# heart, each its own irregular shape. Layers read as fire; separate tongues

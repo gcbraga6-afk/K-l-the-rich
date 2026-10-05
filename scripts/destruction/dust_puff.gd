@@ -16,18 +16,23 @@ func configure(strength: float, stone_tint := Color("9aafbf"), scale := 1.0) -> 
 	z_as_relative = false
 	z_index = 6
 	_tint = stone_tint.lightened(0.5)
-	_life = 1.1 + strength * 1.1
+	# Shorter than it was: dust that hangs around for over two seconds reads as a
+	# stain on the screen rather than as something a round threw up.
+	_life = 0.6 + strength * 0.5
 	var count := int(clampf(7.0 + strength * 30.0, 7.0, 40.0))
 	var rng := RandomNumberGenerator.new()
 	for i in count:
 		var angle := rng.randf_range(0.0, TAU)
 		var speed := rng.randf_range(16.0, 95.0) * (0.45 + strength) * scale
+		# Each mote thins out on its own clock. Giving them all one lifetime makes
+		# the whole cloud vanish between two frames.
 		_motes.append({
 			"at": Vector2.ZERO,
 			"velocity": Vector2.RIGHT.rotated(angle) * speed + Vector2(0, -rng.randf_range(10.0, 48.0) * scale),
 			"radius": rng.randf_range(3.0, 10.0) * (0.7 + strength) * scale,
 			"grow": rng.randf_range(10.0, 26.0) * scale,
 			"delay": rng.randf_range(0.0, 0.18),
+			"life": _life * rng.randf_range(0.45, 1.0),
 		})
 
 func _process(delta: float) -> void:
@@ -44,10 +49,14 @@ func _process(delta: float) -> void:
 		queue_free()
 
 func _draw() -> void:
-	var fade := 1.0 - _age / _life
 	for mote in _motes:
 		if _age < mote.delay:
 			continue
+		var left: float = 1.0 - (_age - mote.delay) / maxf(mote.life, 0.01)
+		if left <= 0.0:
+			continue
 		var colour := _tint
-		colour.a = clampf(fade * 0.5, 0.0, 0.5)
+		# Curved rather than linear, so the cloud thins away instead of sitting at
+		# half opacity until its time runs out.
+		colour.a = clampf(left * left * 0.55, 0.0, 0.55)
 		draw_circle(mote.at, mote.radius, colour)
