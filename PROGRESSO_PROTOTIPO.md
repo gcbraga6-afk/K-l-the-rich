@@ -442,3 +442,45 @@ Sobre os testes: o de orçamento julgava milissegundos, que mediram 13,2 / 21,1 
 na mesma cena conforme a carga da máquina — veredito em cara ou coroa. Passou a julgar
 contagem de corpos, que é determinística. E `assert` que falha trava a bateria inteira
 (o script para, o processo não encerra), então ele imprime FAIL e encerra.
+
+### O fragmento parado no céu: era o prédio, não a física — 2026-10-05
+
+Caçada longa, e a causa não estava em nenhum arquivo de destruição.
+
+`Structure._process` escrevia `position = _base_position` **todo quadro**, mesmo
+parado e sem tremor para aplicar. Escrever numa transformação a marca como suja, e a
+Godot responde forçando todo `RigidBody2D` abaixo daquele nó de volta ao referencial
+do pai. O entulho de uma casa recortada é filho da casa: cada peça era teleportada
+para onde nasceu, sessenta vezes por segundo, a vida inteira.
+
+O traço quadro a quadro não deixa dúvida:
+
+```
+F1  moved=0.0  v=987   ← velocidade integrando
+F2  moved=0.0  v=954   ← menos 32,7 = exatamente um tique de gravidade
+F3  moved=0.0  v=921
+```
+
+Física perfeita, posição apagada logo depois, por seis segundos. Agora a escrita só
+acontece quando o nó realmente saiu do lugar. Peças que assentam: 46 de 85 antes,
+**132 de 132** depois. Entulho virando cenário: 0 antes, 32 depois.
+
+**Armadilha da engine, para a próxima vez:** nunca escreva numa transformação de um
+nó que tenha `RigidBody2D` como descendente, nem com o mesmo valor. Em Godot a
+escrita em si é o evento, não a mudança de valor. Se for inevitável, o entulho não
+deve ser filho do prédio.
+
+**Lição de método, que valeu mais que qualquer hipótese:** passei oito rodadas
+tirando fotos do estado final — "quantas peças estão paradas agora" — e nenhuma delas
+podia enxergar isto, porque foto de estado final não mostra **o quadro em que o
+movimento morre**. Um único traço contínuo de uma peça só, quadro a quadro desde o
+nascimento, achou na primeira tentativa.
+
+No caminho consertei defeitos reais que não eram este: amortecimento contado desde a
+explosão em vez do pouso, física a 120 Hz que não cabia no tique, o teto de
+estilhaços que nunca valeu para dois dos três caminhos que criam pedra, estouros do
+solver a 16.545 px/s, e o sensor de contato que ficava desligado depois que a peça
+era acordada. Todos valiam o conserto. Nenhum era a causa do que o usuário via.
+
+Descartados por não provarem nada: um guarda que apagava peça "presa" (apagava 44
+para pegar 1) e folga no colisor dos estilhaços (saída idêntica, 77 e 77).
