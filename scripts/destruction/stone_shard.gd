@@ -152,7 +152,6 @@ func _physics_process(delta: float) -> void:
 	if _quiet > 1.2 or (_rest > SETTLE_BY and speed < 160.0) or (retired and is_down()):
 		retired = true
 		freeze = true
-		contact_monitor = false
 		set_physics_process(false)
 	# Gone off the map, or still airborne long after any sane arc: either way it is
 	# no longer part of the scene.
@@ -220,6 +219,13 @@ func _rouse(push: Vector2, energy: float) -> void:
 	freeze = false
 	sleeping = false
 	can_sleep = false
+	# Woken rubble has to be able to feel the ground again. Switching contact
+	# reporting off when a piece became scenery was a saving that outlived the piece:
+	# shaken loose by a later round it came back blind to its own touch, so it never
+	# gathered resting time, never damped, never settled, and read contacts=0 even
+	# while jammed against a wall. That is what every reading of this fault showed,
+	# and the zero was a lie.
+	contact_monitor = true
 	_quiet = 0.0
 	_age = 0.0
 	# Shaken loose again, it gets its full settling time back rather than landing
