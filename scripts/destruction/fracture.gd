@@ -10,9 +10,76 @@ extends RefCounted
 const FAR := 20000.0
 
 # Breaking stone down without end is a combinatorial trap: eight shards that each
-# split into five, twice over, is hundreds of bodies from a single wall. Past this
-# many live shards the stone stops subdividing and is only thrown around.
-const SHARD_BUDGET := 160
+# split into five, twice over, is hundreds of bodies from a single wall.
+#
+# This is not a tidiness limit, it is the frame budget. A physics step has to fit
+# inside its own tick or the engine falls behind real time and the game runs in
+# slow motion. Measured: an empty step costs about 1.7 ms and each live shard adds
+# roughly 0.08 ms, against the 16.7 ms a 60 Hz tick pays for. At 160 live pieces
+# that came to 14.8 ms — it passed, with 13% to spare, which is no margin at all on
+# a machine that also has to draw the screen.
+const SHARD_BUDGET := 85
+
+# Frozen rubble is static and costs almost nothing to simulate, but it is still a
+# body in the broadphase and it never goes away on its own: the deadline that frees
+# an old shard lives in its physics process, which freezing switches off. Without a
+# ceiling the kingdom silently fills with stone. Past this, the oldest scenery is
+# cleared to make room.
+const RUBBLE_CAP := 260
+
+
+# Every shard in the world is born through here, so the budget is a real ceiling
+# rather than a ceiling on one of the two ways stone breaks. Returns how many new
+# pieces may be made, having first turned the longest-lying rubble into scenery to
+# make room: what the player is watching is the piece that just broke off, not the
+# gravel from the round before, so old rubble gives way to new rather than new
+# rubble being refused.
+static func room_for(tree: SceneTree, wanted: int) -> int:
+	var allowed: int = mini(wanted, SHARD_BUDGET)
+	if tree == null:
+		return allowed
+	var down: Array = []     # live, and lying on something
+	var flying: Array = []   # live, and still in the air
+	var resting: Array = []  # already scenery
+	for node in tree.get_nodes_in_group("stone_shards"):
+		# A freed node stays in its groups until the end of the frame. Counting those
+		# as live is what let the budget leak: several blasts asking for room in one
+		# frame each saw the pieces the previous call had already cleared, so the
+		# ceiling was never reached and 85 became 186.
+		if not is_instance_valid(node) or node.is_queued_for_deletion():
+			continue
+		if node.freeze or node.retired:
+			resting.append(node)
+		elif node.is_down():
+			down.append(node)
+		else:
+			flying.append(node)
+	# Oldest first, so what gives way is the gravel from the round before rather
+	# than the piece that just broke off in front of the player.
+	var by_age := func(a, b): return a._age > b._age
+	var over: int = down.size() + flying.size() + allowed - SHARD_BUDGET
+	# Rubble already lying on the ground gives way first, and it gives way by
+	# turning to scenery where it lies.
+	if over > 0:
+		down.sort_custom(by_age)
+		for i in mini(over, down.size()):
+			down[i].settle()
+			resting.append(down[i])
+		over -= down.size()
+	# A piece still in the air may not be frozen to make room: frozen where it is,
+	# it hangs in the sky, which is the whole fault this budget was meant to cure.
+	# If it has to go, it goes — vanishing mid-arc reads as a piece lost against the
+	# sky, where stopping dead reads as a broken game.
+	if over > 0:
+		flying.sort_custom(by_age)
+		for i in mini(over, flying.size()):
+			flying[i].queue_free()
+	var spare: int = resting.size() - RUBBLE_CAP
+	if spare > 0:
+		resting.sort_custom(by_age)
+		for i in mini(spare, resting.size()):
+			resting[i].queue_free()
+	return allowed
 
 
 # Shards of `polygon`, biased towards `focus` when it is given, so the crack
@@ -57,11 +124,7 @@ static func scatter(host: Node, source: Node2D, options: Dictionary) -> int:
 	var polygon: PackedVector2Array = options.polygon
 	var focus: Vector2 = options.focus
 	var inherited: Vector2 = options.inherited
-	var tree := host.get_tree()
-	var live: int = tree.get_nodes_in_group("stone_shards").size() if tree != null else 0
-	if live >= SHARD_BUDGET:
-		return 0
-	var allowance: int = mini(int(options.count), SHARD_BUDGET - live)
+	var allowance: int = room_for(host.get_tree(), int(options.count))
 	if allowance < 2:
 		return 0
 	var parts: Array = shards(polygon, allowance, focus)

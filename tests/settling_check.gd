@@ -27,36 +27,82 @@ func run() -> void:
 	# A piece dropped from rest, watched for half a second of clear air. Damping
 	# meant for settling used to apply in flight as well, which bled the fall away
 	# and left masonry drifting down like paper: with the old damping this reads
-	# about 455, with masonry weight and no drag in flight about 780.
+	# about 455, with masonry weight and no drag in flight about 980.
+	# Timed in seconds, not in frames. Counted in frames this measured half a second
+	# at 120 Hz and a whole one at 60 Hz, by which point the piece had already landed
+	# and the number read was the speed after the impact.
 	var probe := _launch(world, facade.to_global(facade.base_offset) + Vector2(0, -620), Vector2.ZERO)
-	for look in range(60):
+	var flown := 0.0
+	var tick := 1.0 / float(Engine.physics_ticks_per_second)
+	while flown < 0.5:
 		await get_tree().physics_frame
-		if not is_instance_valid(probe):
+		if not is_instance_valid(probe) or probe.get_contact_count() > 0:
 			break
+		flown += tick
 		assert(not probe.sleeping, "A piece must not fall asleep in mid air")
 		assert(not probe.freeze, "A piece must not freeze in mid air")
 	assert(is_instance_valid(probe), "The probe must still be falling")
-	print("PROBE fall speed=", probe.linear_velocity.y, " at ", probe.global_position.y)
-	assert(probe.linear_velocity.y > 600.0, "Masonry must fall like masonry, not drift")
+	print("PROBE fall speed=", probe.linear_velocity.y, " after ", flown, "s of clear air")
+	assert(flown >= 0.5, "The probe must get its clear air, or the number means nothing")
+	assert(probe.linear_velocity.y > 850.0, "Masonry must fall like masonry, not drift")
 	probe.queue_free()
+	# A piece thrown far spends seconds in the air before it lands. Settling time
+	# used to run from the blast, so that piece touched down already thick with
+	# damping and oozed to a halt instead of clattering. Thrown high, then caught
+	# the moment it first touches something: its drag must still be the drag of a
+	# piece that has only just landed.
+	var tossed := _launch(world, facade.to_global(facade.base_offset) + Vector2(60, -700), Vector2(0, -1000))
+	var landed_damp := -1.0
+	for look in range(600):
+		await get_tree().physics_frame
+		if not is_instance_valid(tossed):
+			break
+		if tossed.get_contact_count() > 0:
+			landed_damp = tossed.linear_damp
+			break
+	print("TOSSED age=", tossed._age, " damp on landing=", landed_damp)
+	assert(landed_damp >= 0.0, "The tossed piece must land on something")
+	# Long enough that, counted from the blast as it used to be, the piece would have
+	# landed with well over 1.0 of drag against the 0.4 this allows.
+	assert(tossed._age > 1.2, "The toss must be a long one, or it tests nothing")
+	assert(landed_damp < 0.4, "A piece must land free to clatter, not into molasses")
+	tossed.queue_free()
 	# Long enough for anything thrown to have come down and settled.
 	await steps(600)
-	var hanging := 0
-	var total := 0
+	# Asking where a piece is cannot answer this. Height above the rooftops called
+	# rubble resting on a roof a fault and missed rubble stopped under the eaves. A
+	# ray cast down from the piece's middle accused stone nestled into the hillside,
+	# because a ray starting inside a collider reports no hit; moved above the piece,
+	# the same ray ran straight through the wall a piece was pinned against and
+	# called that wall its support.
+	#
+	# The honest question is physical: let the piece go, and see whether it falls.
+	# Stone lying on the ground stays where it is. Stone held up by nothing, or
+	# pinned to the side of a house in open air, drops.
+	var stopped: Array = []
+	var was_at := {}
 	for shard in get_tree().get_nodes_in_group("stone_shards"):
 		if not is_instance_valid(shard):
 			continue
-		total += 1
-		# Well clear of the rooftops: rubble resting on a roof is fine, rubble
-		# stopped in open sky is not. Asleep counts as stopped, because a sleeping
-		# body is not being simulated at all.
-		var stopped: bool = shard.freeze or shard.sleeping or shard.linear_velocity.length() < 12.0
-		if stopped and shard.global_position.y < ground - 320.0:
+		if shard.freeze or shard.sleeping or shard.linear_velocity.length() < 12.0:
+			stopped.append(shard)
+			was_at[shard] = shard.global_position
+	var total: int = get_tree().get_nodes_in_group("stone_shards").size()
+	for shard in stopped:
+		shard.set_physics_process(false)
+		shard.set_deferred("freeze", false)
+		shard.set_deferred("sleeping", false)
+	await steps(30)
+	var hanging := 0
+	for shard in stopped:
+		if not is_instance_valid(shard):
+			continue
+		var dropped: float = shard.global_position.y - was_at[shard].y
+		if dropped > 26.0:
 			hanging += 1
 			if hanging <= 3:
-				print("  HANGING at ", shard.global_position, " frozen=", shard.freeze,
-					" asleep=", shard.sleeping, " v=", shard.linear_velocity.length())
-	print("SETTLING total=", total, " hanging=", hanging)
+				print("  HANGING at ", was_at[shard], " fell ", dropped, " once released")
+	print("SETTLING total=", total, " stopped=", stopped.size(), " hanging=", hanging, " ground=", ground)
 	assert(total > 0, "The rounds must have thrown some rubble")
 	assert(hanging == 0, "No piece may freeze in mid air")
 	print("PASS: every piece thrown by a round comes down and settles on something")

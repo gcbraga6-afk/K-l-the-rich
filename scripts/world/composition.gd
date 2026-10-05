@@ -57,28 +57,36 @@ func _ready() -> void:
 			place(b, Vector2(bx[i], 665), 205)
 		b.get_node("NameLabel").hide()
 	var rows: Array = JSON.parse_string(FileAccess.get_file_as_string("res://assets/composition/nobles.json"))
-	for i in range(6):
-		var tex := AtlasTexture.new()
-		tex.atlas = NobleSheet
-		var r: Array = rows[i % 4]
-		tex.region = Rect2(r[0],r[1],r[2],r[3])
-		tex.filter_clip = true
-		if i < 4:
-			var b := make_building("NobleHouse%d" % (i+1), tex)
-			# Larger, and spaced to carry it. The terrace still clears the castle's own
-			# footing, which begins at 5775, so all four houses stay.
-			place(b, Vector2([4320,4630,4930,5230][i], 665 if i < 3 else 625), [310,258,305,287][i])
-			haze(b.get_node("Artwork"), 0.10)
-			noble_houses.append(b)
-		else:
-			var b := Sprite2D.new()
-			b.texture = tex
-			b.centered = false
-			b.scale = Vector2.ONE * (228.0 / tex.get_width())
-			b.position = Vector2(4430+(i-4)*440, 630-tex.get_height()*b.scale.y)
-			b.z_index = -5
-			haze(b, 0.17)
-			add_child(b)
+	# Three noble houses where there were four: the half-timbered one that stood in
+	# the middle is gone, and the three that remain are half again the size, set
+	# shoulder to shoulder so the terrace reads as one address rather than as
+	# separate houses with daylight between them. The last stands further up the
+	# terrace, so it draws behind its neighbour. The right edge lands at 5392, well
+	# clear of the castle's own footing at 5775.
+	var terrace := [
+		{"row": 0, "x": 4380, "foot": 665, "width": 465, "depth": 0},
+		{"row": 2, "x": 4786, "foot": 665, "width": 458, "depth": 0},
+		{"row": 3, "x": 5177, "foot": 625, "width": 431, "depth": -2},
+	]
+	for i in terrace.size():
+		var seat: Dictionary = terrace[i]
+		var b := make_building("NobleHouse%d" % (i+1), _noble_art(rows, seat["row"]))
+		place(b, Vector2(seat["x"], seat["foot"]), seat["width"])
+		b.z_index = seat["depth"]
+		haze(b.get_node("Artwork"), 0.10)
+		noble_houses.append(b)
+	# Two more of the same houses far back, carrying heavy haze: depth behind the
+	# terrace, never shot at.
+	for i in range(2):
+		var tex := _noble_art(rows, i)
+		var b := Sprite2D.new()
+		b.texture = tex
+		b.centered = false
+		b.scale = Vector2.ONE * (228.0 / tex.get_width())
+		b.position = Vector2(4430+i*440, 630-tex.get_height()*b.scale.y)
+		b.z_index = -5
+		haze(b, 0.17)
+		add_child(b)
 	var castle = world.get_node("Structures/Castle")
 	replace_art(castle, preload("res://assets/composition/castle.png"))
 	place(castle, Vector2(6250,535), 950)
@@ -110,6 +118,15 @@ func _ready() -> void:
 			person.position.x = 950 + person.get_index()*77
 			person.left_x = 850
 			person.right_x = 3700
+
+# One house cut out of the noble sheet.
+func _noble_art(rows: Array, row: int) -> AtlasTexture:
+	var tex := AtlasTexture.new()
+	tex.atlas = NobleSheet
+	var r: Array = rows[row]
+	tex.region = Rect2(r[0], r[1], r[2], r[3])
+	tex.filter_clip = true
+	return tex
 
 func haze(item: CanvasItem, amount: float) -> void:
 	var material := ShaderMaterial.new()

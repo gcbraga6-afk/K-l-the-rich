@@ -1,7 +1,13 @@
 extends Node2D
 
 func _ready() -> void:
-	Engine.physics_ticks_per_second = 120
+	# A physics step has to fit inside its own tick. Past that the engine cannot
+	# deliver the ticks, the physics clock falls behind the wall clock, and the whole
+	# game visibly runs in slow motion — which is how a shard storm used to look.
+	# Measured, a step with rubble in the air costs around 30 ms, so 120 Hz asked for
+	# nearly four times what it could pay. Rounds carry shape-cast CCD, so the high
+	# rate was never what kept them from tunnelling.
+	Engine.physics_ticks_per_second = 60
 	DisplayServer.window_set_title("K**l the Rich — 1920 × 1080 · câmera suave")
 	_expand_kingdom()
 	$Backdrop.hide()

@@ -11,6 +11,7 @@ extends Node2D
 # how a round brings down one half of a cottage and leaves the other half whole.
 
 const Shard = preload("res://scripts/destruction/stone_shard.gd")
+const Fracture = preload("res://scripts/destruction/fracture.gd")
 const DustPuff = preload("res://scripts/destruction/dust_puff.gd")
 const MASK_SHADER = preload("res://scripts/effects/facade_mask.gdshader")
 
@@ -185,7 +186,7 @@ func _collapse_roof(at_x: float, radius: float) -> void:
 	# Tiles, not slabs. The radius is in mask pixels, so it has to come back into
 	# world units or the roof sheds pieces larger than the house it came off.
 	var tile := radius * pixel
-	var pieces := clampi(chunks.size() / 240, 4, 14)
+	var pieces := Fracture.room_for(get_tree(), clampi(chunks.size() / 240, 4, 14))
 	for i in pieces:
 		var seed_point: Vector2 = chunks[rng.randi_range(0, chunks.size() - 1)]
 		var span := tile * rng.randf_range(0.07, 0.14)
@@ -404,6 +405,13 @@ func _tear(x: int, y: int) -> float:
 func _drop_unsupported(shapes: Array) -> Array:
 	var standing := []
 	var fell := false
+	# This is the third way a round makes rubble, and the one that was never counted:
+	# every island of masonry the hole cuts loose became a body of its own, so a carve
+	# that shattered the wall into a hundred islands made a hundred bodies behind the
+	# budget's back. Measured, the live count jumped 82 to 198 between two gate calls.
+	# The big pieces still fall; past the allowance the masonry is erased from the wall
+	# without a body, which looks the same and costs nothing.
+	var allowance: int = Fracture.room_for(get_tree(), mini(shapes.size(), 20))
 	for polygon in shapes:
 		var bottom := -INF
 		for point in polygon:
@@ -411,7 +419,9 @@ func _drop_unsupported(shapes: Array) -> Array:
 		if bottom >= mask.get_height() - GROUND_TOL / pixel:
 			standing.append(polygon)
 			continue
-		_fall(polygon)
+		if allowance > 0:
+			_fall(polygon)
+			allowance -= 1
 		fell = true
 		var box := Rect2(polygon[0], Vector2.ZERO)
 		for point in polygon:
@@ -477,7 +487,10 @@ func _fall(polygon: PackedVector2Array) -> void:
 func _spill(at: Vector2, radius: float, removed: int, taken: Array) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("%d:%d" % [int(at.x), int(at.y)])
-	var count := clampi(int(removed / 260.0), 3, 10)
+	# Through the same gate the fractured stone goes through. Spilling outside it is
+	# how the world ended up with 330 live shards against a ceiling of 160, which is
+	# what put the physics clock behind real time.
+	var count := Fracture.room_for(get_tree(), clampi(int(removed / 260.0), 3, 10))
 	for i in count:
 		var size := radius * rng.randf_range(0.10, 0.24)
 		var chunk := PackedVector2Array()

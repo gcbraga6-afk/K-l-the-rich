@@ -36,7 +36,20 @@ func run() -> void:
 		assert(Rect2i(Vector2i.ZERO,plateau_image.get_size()).has_point(sample))
 		assert(plateau_image.get_pixelv(sample).a > 0.8, "Every castle base column must have opaque terrain below it")
 	assert(world.get_node("Businesses").buildings.size() == 6)
-	assert(world.get_node("Composition").noble_houses.size() == 4)
+	# Three noble houses, half again the size they were, standing shoulder to
+	# shoulder: no daylight between neighbours, and the terrace stops short of the
+	# castle's own footing.
+	var nobles: Array = world.get_node("Composition").noble_houses
+	assert(nobles.size() == 3, "The middle noble house is gone")
+	var previous_edge := -1.0
+	for noble in nobles:
+		var noble_art = noble.get_node("Artwork")
+		assert(noble_art.house_width >= 430.0, "A noble house must be half again its old size")
+		var left: float = noble.position.x - noble_art.house_width / 2.0
+		if previous_edge >= 0.0:
+			assert(left < previous_edge, "Neighbouring noble houses must not stand apart")
+		previous_edge = noble.position.x + noble_art.house_width / 2.0
+	assert(previous_edge < 5775.0, "The terrace must clear the castle's footing")
 	knight._ammo = 1
 	knight._fire(Vector2(2200,-1600))
 	assert(cannon.recoil == 1.0)
