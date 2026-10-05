@@ -16,7 +16,11 @@ func run() -> void:
 	for house in village.front_houses + village.rear_houses:
 		models[house.get_meta("model")] = true
 	assert(models.size() == 20, "Every generated house model must appear in the kingdom")
-	assert(businesses.buildings.size() == 8, "Four shops and four factories must exist")
+	# The market and the tailor were removed: their awnings sprawled across the
+	# street and hid what a round did to the cottages either side.
+	assert(businesses.buildings.size() == 6, "Two shops and four factories must exist")
+	for shop in businesses.buildings:
+		assert(not str(shop.get_meta("business")) in ["Mercado", "Alfaiataria"], "The awning shops must be gone")
 	for rear in village.rear_houses:
 		assert(not rear is PhysicsBody2D, "Background buildings must not stop projectiles")
 	var camera = world.get_node("KingdomCamera")

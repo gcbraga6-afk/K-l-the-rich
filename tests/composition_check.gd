@@ -35,7 +35,7 @@ func run() -> void:
 		var sample := Vector2i(int(world_x-5100),int(world_y))
 		assert(Rect2i(Vector2i.ZERO,plateau_image.get_size()).has_point(sample))
 		assert(plateau_image.get_pixelv(sample).a > 0.8, "Every castle base column must have opaque terrain below it")
-	assert(world.get_node("Businesses").buildings.size() == 8)
+	assert(world.get_node("Businesses").buildings.size() == 6)
 	assert(world.get_node("Composition").noble_houses.size() == 4)
 	knight._ammo = 1
 	knight._fire(Vector2(2200,-1600))

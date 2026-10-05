@@ -321,5 +321,14 @@ PENDÊNCIAS: a torre do castelo e o espelho continuam no modelo de blocos, a ped
 do usuário, e serão feitos com atenção própria. Só `house_02.png` tem mapa de
 materiais; as outras 19 casas funcionam sem mapa, como alvenaria.
 
-Observação de composição, não defeito: a vila é densa e as fachadas se sobrepõem,
-então o estrago numa casa fica parcialmente escondido pelas vizinhas da frente.
+Composição: Mercado e Alfaiataria foram **removidos** a pedido do usuário. Eram os
+dois comércios com tenda larga de fachada, e as tendas se espalhavam pela rua,
+apertavam as casas dos dois lados e escondiam o estrago. As duas lojas restantes
+ocupam o espaço que era das tendas. Rotinas dos moradores passaram a escolher
+destino por posição no que resta, não por índice fixo, e a composição decide altura
+e névoa pela marca `industry` em vez de contar índices.
+
+A bala soltava, além do entulho de verdade, 14 retângulos de cor chapada — resto do
+modelo antigo de explosão. Era isso que aparecia como "destroço cinza" no jogo e não
+na bancada: a bancada chama o recorte direto, sem passar pela cena de explosão.
+Removidos; o recorte já produz entulho com a textura de onde quebrou.

@@ -34,11 +34,14 @@ func _ready() -> void:
 		var x: float = 710 + i * 125
 		b.position = Vector2(x-b.texture.get_width()*b.scale.x/2, 630-b.texture.get_height()*b.scale.y)
 	var businesses = world.get_node("Businesses")
-	var bx := [905, 1160, 1440, 1660, 2720, 2990, 3260, 3530]
+	# Two shops fewer, and the two that remain take the space the awnings had, so
+	# the street reads as a street rather than as a wall of frontage.
+	var bx := [950, 1520, 2720, 2990, 3260, 3530]
 	for i in businesses.buildings.size():
 		var b = businesses.buildings[i]
-		place(b, Vector2(bx[i], 665 if i < 4 else 710), 205 if i < 4 else 330)
-		if i >= 4:
+		var industry: bool = b.get_meta("industry", i >= 2)
+		place(b, Vector2(bx[i], 710 if industry else 665), 330 if industry else 205)
+		if industry:
 			haze(b.get_node("Artwork"), 0.09)
 		b.get_node("NameLabel").hide()
 	var rows: Array = JSON.parse_string(FileAccess.get_file_as_string("res://assets/composition/nobles.json"))

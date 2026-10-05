@@ -19,7 +19,6 @@ func _ready() -> void:
 		fire.set_script(FireBurst)
 		add_child(fire)
 		fire.configure(radius * 0.62, 1.0)
-		_spawn_debris()
 	EventBus.emit_camera_shake_requested(11.0, 0.24)
 
 	var tween := create_tween()
@@ -50,31 +49,3 @@ func _apply_damage() -> void:
 		node.apply_explosion_damage(damage, global_position, falloff, radius, heading)
 
 
-func _spawn_debris() -> void:
-	for i in range(14):
-		var piece := RigidBody2D.new()
-		piece.gravity_scale = 1.0
-		piece.global_position = global_position + Vector2(randf_range(-10.0, 10.0), randf_range(-10.0, 10.0))
-		piece.linear_velocity = Vector2.RIGHT.rotated(randf_range(0.0, TAU)) * randf_range(160.0, 440.0)
-		piece.angular_velocity = randf_range(-10.0, 10.0)
-		piece.collision_layer = 0
-		piece.collision_mask = 0
-
-		var visual := ColorRect.new()
-		var size := randf_range(5.0, 13.0)
-		visual.offset_left = -size * 0.5
-		visual.offset_top = -size * 0.5
-		visual.offset_right = size * 0.5
-		visual.offset_bottom = size * 0.5
-		visual.color = Color(randf_range(0.16, 0.34), randf_range(0.11, 0.22), randf_range(0.07, 0.13), 1.0)
-		piece.add_child(visual)
-
-		get_tree().current_scene.add_child(piece)
-		_fade_and_free(piece)
-
-
-func _fade_and_free(piece: RigidBody2D) -> void:
-	var tween := create_tween()
-	tween.tween_interval(randf_range(0.55, 0.95))
-	tween.tween_property(piece, "modulate", Color(1, 1, 1, 0), 0.35)
-	tween.tween_callback(piece.queue_free)

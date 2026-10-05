@@ -7,7 +7,12 @@ const TITLES := ["Padaria", "Taverna", "Mercado", "Alfaiataria", "Tecelagem Real
 
 func _ready() -> void:
 	var xs := [1540, 2070, 2750, 3440, 4820, 5160, 5510, 5840]
+	# The market and the tailor are gone. Their wide awnings sprawled across the
+	# street, crowded the cottages either side and hid what a round did to them.
+	var dropped := [2, 3]
 	for i in range(8):
+		if i in dropped:
+			continue
 		var b: StaticBody2D
 		if i == 4:
 			b = get_parent().get_node("Structures/Factory")
@@ -31,6 +36,8 @@ func _ready() -> void:
 			b.add_child(label)
 		b.position = Vector2(xs[i], 550)
 		b.set_meta("business", TITLES[i])
+		# Which row this belongs to, so nothing downstream has to count on an index.
+		b.set_meta("industry", i >= 4)
 		var texture := Catalog.building(i)
 		var width := 285.0 if i < 4 else 310.0
 		var height := width * texture.get_height() / texture.get_width()
@@ -72,7 +79,9 @@ func _assign_routines() -> void:
 			continue
 		var home: Node2D = village.front_houses[worker_index % village.front_houses.size()]
 		var job: Node2D = buildings[worker_index % buildings.size()]
-		person.routine_sites = [home, job, buildings[2 if worker_index % 2 == 0 else 1]]
+		# Picked by position in whatever is left standing, not by a fixed index: two
+		# of the shops no longer exist.
+		person.routine_sites = [home, job, buildings[(worker_index + 2) % buildings.size()]]
 		person.routine_index = worker_index % 3
 		person.speed = 45.0 + (worker_index % 4) * 7.0
 		worker_index += 1
