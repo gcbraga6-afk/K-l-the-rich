@@ -16,6 +16,7 @@ const MASK_SHADER = preload("res://scripts/effects/facade_mask.gdshader")
 
 const GROUND_TOL := 10.0   # distance from the footing still counted as standing on it
 const RIM := 3.0           # pixels of scorched edge around every hole
+const STEP := 3            # mask pixels decided together, to keep a round cheap
 
 # Painted modules the room is laid up from. Each house draws a different
 # combination, so twenty cottages do not share one interior. Missing files are
@@ -75,7 +76,7 @@ func setup(texture: Texture2D, width: float, foot_y: float, structure: Node = nu
 		for x in range(art.get_width()):
 			var index := y * art.get_width() + x
 			var opaque: bool = art.get_pixel(x, y).a > 0.3
-			_mask_bytes[index] = 255
+			_mask_bytes[index] = 255 if opaque else 0
 			_solid_bytes[index * 4] = 255
 			_solid_bytes[index * 4 + 1] = 255
 			_solid_bytes[index * 4 + 2] = 255
@@ -92,7 +93,7 @@ func setup(texture: Texture2D, width: float, foot_y: float, structure: Node = nu
 		_noise[i] = n - floor(n)
 	_build_interior()
 	_build_sprite()
-	_rebuild_collision()
+	_rebuild_collision(_silhouette())
 
 
 # The round takes a bite out of the wall where it lands.
@@ -127,8 +128,8 @@ func _carve_now(at: Vector2, radius: float) -> void:
 	_spill(at, radius, removed, taken)
 	# Rubble already lying here is part of what the next round lands in.
 	Shard.disturb_all(get_tree(), at, radius * 1.6, 1.0)
-	_drop_unsupported()
-	_rebuild_collision()
+	var shapes: Array = _drop_unsupported(_silhouette())
+	_rebuild_collision(shapes)
 
 
 # The row at which the silhouette stops widening: below it the walls are plumb,
@@ -210,7 +211,11 @@ func _erode(centre: Vector2, radius: float, lift: float, top: int, floor_row := 
 	var to_y := mini(mask.get_height(), int(maxf(float(bottom) + wander, centre.y + reach)))
 	var from_x := maxi(0, int(centre.x - reach))
 	var to_x := mini(mask.get_width(), int(centre.x + reach))
-	for x in range(from_x, to_x):
+	var height := mask.get_height()
+	# Decided per block of STEP by STEP rather than per pixel. A quarter of a
+	# million GDScript iterations is most of the pause a round used to cause, and at
+	# this art scale a block is barely over one world unit across.
+	for x in range(from_x, to_x, STEP):
 		var sway := (_tear(x, 7) - 0.5) * wander
 		var dx := (float(x) - centre.x) / radius
 		var dx2 := dx * dx
@@ -218,23 +223,33 @@ func _erode(centre: Vector2, radius: float, lift: float, top: int, floor_row := 
 			continue
 		var low := maxi(from_y, int(top + sway))
 		var high := mini(to_y, int(bottom + sway))
-		for y in range(low, high):
+		for y in range(low, high, STEP):
 			var dy := (float(y) - centre.y) / radius
 			if dy < 0.0:
 				dy /= maxf(lift, 0.001)
 			var t := sqrt(dx2 + dy * dy)
 			if t > 1.45:
 				continue
+			if _mask_bytes[y * width + x] == 0:
+				continue
 			var torn := t + _tear(x, y) * 0.5 - 0.22
-			var index := y * width + x
-			if torn <= 1.0:
-				if _solid_bytes[index * 4 + 3] > 127:
-					taken.append(Vector2(x, y))
-					_solid_bytes[index * 4 + 3] = 0
-					_standing -= 1
-				_mask_bytes[index] = 0
-			elif torn <= 1.0 + RIM / radius:
-				_mask_bytes[index] = mini(_mask_bytes[index], 102)
+			if torn > 1.0 + RIM / radius:
+				continue
+			var gone := torn <= 1.0
+			var last_x := mini(x + STEP, width)
+			var last_y := mini(y + STEP, height)
+			for by in range(y, last_y):
+				var row := by * width
+				for bx in range(x, last_x):
+					var index := row + bx
+					if gone:
+						if _solid_bytes[index * 4 + 3] > 127:
+							taken.append(Vector2(bx, by))
+							_solid_bytes[index * 4 + 3] = 0
+							_standing -= 1
+						_mask_bytes[index] = 0
+					else:
+						_mask_bytes[index] = mini(_mask_bytes[index], 102)
 	return taken
 
 
@@ -247,14 +262,18 @@ func _tear(x: int, y: int) -> float:
 
 
 # Masonry the hole cut off from the ground is no longer part of the house.
-func _drop_unsupported() -> void:
-	for polygon in _silhouette():
+func _drop_unsupported(shapes: Array) -> Array:
+	var standing := []
+	var fell := false
+	for polygon in shapes:
 		var bottom := -INF
 		for point in polygon:
 			bottom = maxf(bottom, point.y)
 		if bottom >= mask.get_height() - GROUND_TOL / pixel:
+			standing.append(polygon)
 			continue
 		_fall(polygon)
+		fell = true
 		var box := Rect2(polygon[0], Vector2.ZERO)
 		for point in polygon:
 			box = box.expand(point)
@@ -266,7 +285,9 @@ func _drop_unsupported() -> void:
 					if _solid_bytes[index * 4 + 3] > 127:
 						_solid_bytes[index * 4 + 3] = 0
 						_standing -= 1
-	_sync_images()
+	if fell:
+		_sync_images()
+	return standing
 
 
 func _fall(polygon: PackedVector2Array) -> void:
@@ -385,10 +406,19 @@ func _sync_images() -> void:
 func _silhouette() -> Array:
 	var bitmap := BitMap.new()
 	bitmap.create_from_image_alpha(_solid, 0.5)
-	return bitmap.opaque_to_polygons(Rect2i(Vector2i.ZERO, Vector2i(art.get_width(), art.get_height())), 2.0)
+	return bitmap.opaque_to_polygons(Rect2i(Vector2i.ZERO, Vector2i(art.get_width(), art.get_height())), 4.0)
 
 
-func _rebuild_collision() -> void:
+func _polygon_area(polygon: PackedVector2Array) -> float:
+	var total := 0.0
+	for i in polygon.size():
+		var a := polygon[i]
+		var b := polygon[(i + 1) % polygon.size()]
+		total += a.x * b.y - b.x * a.y
+	return absf(total) * 0.5
+
+
+func _rebuild_collision(shapes: Array) -> void:
 	if _collider != null:
 		_collider.queue_free()
 	_collider = StaticBody2D.new()
@@ -397,14 +427,20 @@ func _rebuild_collision() -> void:
 	_collider.position = base_offset
 	if owner_structure != null:
 		_collider.set_meta("structure_owner", owner_structure)
-	for polygon in _silhouette():
-		for convex in Geometry2D.decompose_polygon_in_convex(polygon):
-			var shape := CollisionPolygon2D.new()
-			var points := PackedVector2Array()
-			for point in convex:
-				points.append(point * pixel)
-			shape.polygon = points
-			_collider.add_child(shape)
+	for polygon in shapes:
+		if polygon.size() < 3 or _polygon_area(polygon) < 12.0:
+			continue
+		var shape := CollisionPolygon2D.new()
+		# Built from the outline's segments rather than decomposed into convex
+		# pieces. Tracing a shelled silhouette loosely can leave an outline that
+		# crosses itself, which the decomposer reports as an engine error, and in
+		# the editor an engine error halts the running game.
+		shape.build_mode = CollisionPolygon2D.BUILD_SEGMENTS
+		var points := PackedVector2Array()
+		for point in polygon:
+			points.append(point * pixel)
+		shape.polygon = points
+		_collider.add_child(shape)
 	add_child(_collider)
 
 
@@ -460,26 +496,15 @@ func _build_interior() -> void:
 	# Above the ceiling there is no room to see, only roof space and then sky. A
 	# breach up there has to open through, or a lost roof stays on screen as a dark
 	# shape in the exact outline of the roof it replaced.
-	var reach := int(float(h) * 0.22)
+	# Above the ceiling there is no room to see, only roof space and then sky. A
+	# breach up there has to open clean through: trying to keep the module's own
+	# timber hanging there, by brightness, only ever produced speckle and streaks
+	# against the sky. The timber that hangs in a gap is the falling debris itself.
 	for x in range(w):
 		var edge := ceiling - int((_tear(x, 0) - 0.5) * float(h) * 0.12)
 		for y in range(mini(edge, h)):
 			var pixel := room.get_pixel(x, y)
-			# The joists themselves stay, as what is left hanging in the gap. Alpha
-			# here is all or nothing: grading it by brightness turns the module's own
-			# vertical banding into translucent streaks against the sky.
-			var lit: float = (pixel.r + pixel.g + pixel.b) / 3.0
-			var is_timber: bool = lit > 0.17 and y > edge - reach
-			room.set_pixel(x, y, Color(pixel.r, pixel.g, pixel.b, 1.0 if is_timber else 0.0))
-	# Broken timber hanging under the ceiling, rubble heaped along the floor.
-	for i in range(rng.randi_range(2, 4)):
-		var beam := _module(LOOSE[rng.randi() % 2])
-		if beam != null:
-			_scatter(room, beam, Vector2i(rng.randi_range(0, w - 1), rng.randi_range(ceiling - 20, ceiling + int(h * 0.18))))
-	for i in range(rng.randi_range(3, 6)):
-		var heap := _module(LOOSE[2 + rng.randi() % 2])
-		if heap != null:
-			_scatter(room, heap, Vector2i(rng.randi_range(0, w - 1), floor_y - rng.randi_range(0, int(h * 0.06))))
+			room.set_pixel(x, y, Color(pixel.r, pixel.g, pixel.b, 0.0))
 	_room_texture = ImageTexture.create_from_image(room)
 
 

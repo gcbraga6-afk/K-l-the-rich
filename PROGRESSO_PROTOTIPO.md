@@ -262,13 +262,17 @@ Visual aprovado pelo usuário na bancada `scenes/physics_lab/carve.tscn`.
 - Escombro carrega a textura de onde quebrou, e assenta: amortecimento cresce com
   o tempo solto, com prazo final. Tiro novo quebra entulho já caído.
 
-PENDÊNCIA PRINCIPAL — desempenho. Cada tiro custa ~89 ms (era ~170 ms), o que o
-usuário descreve como o jogo pausar antes de explodir. Já feitos: contagem
-incremental em vez de varrer a imagem, ruído pré-calculado em tabela no lugar de
-sin() por pixel, rejeição por distância antes do ruído, e máscara trabalhada como
-PackedByteArray. Restam ~60 ms no recorte e ~29 ms em recolher silhueta e remontar
-colisão. Caminhos não tentados: fazer o recorte em fatias ao longo de alguns
-quadros, reduzir a resolução da máscara, ou mover o laço para um shader.
+DESEMPENHO — resolvido. Cada tiro caiu de ~170 ms para ~23 ms, abaixo de dois
+quadros. O que rendeu, em ordem: contagem incremental em vez de varrer a imagem;
+ruído pré-calculado em tabela no lugar de sin() por pixel; máscara trabalhada como
+PackedByteArray em vez de get_pixel/set_pixel; decisão por bloco de 3x3 em vez de
+pixel a pixel; a máscara nascendo vazia onde a arte é transparente, para o recorte
+pular céu e chão sem avaliar nada; silhueta calculada uma vez por tiro em vez de
+duas, com os polígonos que caíram apenas saindo da lista.
+
+A colisão passou a ser por segmentos do contorno em vez de decomposição convexa.
+Um contorno de silhueta bombardeada pode se auto-intersectar, e o decompositor
+reporta isso como erro de motor — que no editor para o jogo rodando.
 
 Outras pendências: o item do mapa de materiais pintado à mão (janela arrebenta
 inteira, parede em volta fica de pé) não foi feito. E nada disso está no jogo
