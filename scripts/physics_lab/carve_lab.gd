@@ -60,7 +60,7 @@ func fire(velocity: Vector2) -> RigidBody2D:
 	ball.contact_monitor = true
 	ball.max_contacts_reported = 4
 	ball.collision_layer = 2
-	ball.collision_mask = 1 | 8
+	ball.collision_mask = 1
 	ball.z_as_relative = false
 	ball.z_index = 6
 	var shape := CircleShape2D.new()

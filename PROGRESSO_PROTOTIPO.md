@@ -338,3 +338,13 @@ desenhando a silhueta lisa por baixo, e essa silhueta é o **casco convexo**, ma
 larga que a pintura. Resultado: cada peça com uma borda cinza-azulada em volta.
 Corrigido nas ilhas que desabam e nas lascas que quebram de novo; e a cor de
 reserva, para peça sem pintura nenhuma, passou de azul-ardósia para pedra.
+
+Mesmo assim o usuário continuou vendo cinza. Medido: **zero** entulho chapado, 146
+pintados — não era entulho. Era o desenho antigo de ruína do `house_art.gd`, que
+pinta retângulos cinza-oliva no nível da rua, e que **lojas e fábricas** ainda
+usavam por estarem no modelo antigo. Comércio e indústria passaram para o recorte
+também, então a rua inteira quebra do mesmo jeito.
+
+A bala detonava no ar: a camada de entulho estava na máscara de colisão dela, então
+ela explodia nos destroços do tiro anterior ainda caindo. Removida — o estouro já
+sacode o entulho dentro do raio, então nada se perde.

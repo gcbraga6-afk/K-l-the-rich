@@ -26,9 +26,15 @@ func _ready() -> void:
 	building = get_parent()
 	var art = building.get_node("Artwork")
 	art.hide()
-	building.get_node("Visual").hide()
-	building.get_node("NameLabel").hide()
-	building.get_node("CollisionShape2D").disabled = true
+	# Shops and factories are built slightly differently from cottages, so nothing
+	# here may insist on a node being present.
+	for spare in ["Visual", "NameLabel"]:
+		var node = building.get_node_or_null(spare)
+		if node != null:
+			node.hide()
+	var collider = building.get_node_or_null("CollisionShape2D")
+	if collider != null:
+		collider.disabled = true
 	building.collision_layer = 0
 	facade = Node2D.new()
 	facade.name = "Facade"

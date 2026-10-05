@@ -12,7 +12,10 @@ var _has_impacted := false
 
 func _ready() -> void:
 	add_to_group("active_projectiles")
-	collision_mask = 1 | 8 | 16
+	# Terrain and masonry only. Rubble is scenery, not a target: with the debris
+	# layer in here a round detonates in mid air on whatever the last one threw up.
+	# A blast still stirs any rubble inside its radius, so nothing is lost.
+	collision_mask = 1 | 16
 	if weapon == "Basic":
 		mass = 6.0
 		linear_damp = 0.0

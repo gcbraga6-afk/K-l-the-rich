@@ -32,7 +32,19 @@ func run() -> void:
 	worker.routine_sites = [shop, village.front_houses[1]]
 	worker.routine_index = 0
 	worker.routine_wait = 3.0
-	shop.apply_explosion_damage(100, shop.global_position)
+	# Carved buildings have no notion of a hundred points of damage: one is lost when
+	# enough of it has actually been taken away. So take it away.
+	var shop_facade = shop.get_node("PhysicalHouse").facade
+	var attempt := 0
+	while shop._integrity > 0 and attempt < 24:
+		var across: float = 0.15 + 0.1 * (attempt % 8)
+		var down: float = 0.15 + 0.2 * ((attempt / 8) % 4)
+		shop.apply_explosion_damage(2, shop_facade.to_global(shop_facade.base_offset
+			+ Vector2(shop_facade.art.get_width() * across, shop_facade.art.get_height() * down) * shop_facade.pixel))
+		attempt += 1
+		await get_tree().physics_frame
+		await get_tree().physics_frame
+	print("SHOP integrity=", shop._integrity, " after ", attempt, " rounds")
 	await get_tree().physics_frame
 	worker._follow_routine(0.016)
 	assert(worker.routine_index == 1, "Workers must skip a destroyed workplace")
