@@ -87,6 +87,12 @@ func _ready() -> void:
 		b.z_index = -5
 		haze(b, 0.17)
 		add_child(b)
+	# The square between the last two cottages, where the street is otherwise empty.
+	var fountain := StaticBody2D.new()
+	fountain.name = "VillageFountain"
+	fountain.set_script(preload("res://scripts/props/village_fountain.gd"))
+	world.get_node("Structures").add_child(fountain)
+	fountain.stand_at(2210.0)
 	var castle = world.get_node("Structures/Castle")
 	replace_art(castle, preload("res://assets/composition/castle.png"))
 	place(castle, Vector2(6250,535), 950)

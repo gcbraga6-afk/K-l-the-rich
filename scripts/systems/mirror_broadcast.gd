@@ -111,7 +111,20 @@ func _on_event(event: Dictionary) -> void:
 	var kind: String = event.get("type", "")
 	var target: String = event.get("target", "")
 	var text := ""
-	if kind in ["STRUCTURE_HIT", "STRUCTURE_DESTROYED"]:
+	# The water is checked before anything else a round can hit. The fountain also
+	# reports itself as a structure, so without this it fell through to the line
+	# about the Kingdom's trade and the Crown missed its best moment of the match.
+	# A round that chips the fountain is not news; the Crown has nothing to say about
+	# it yet. Saying the usual line about trade here would occupy the screen for
+	# twelve seconds and bury the moment the water actually stops.
+	if target == "VillageFountain" and kind == "STRUCTURE_HIT":
+		return
+	var urgent := false
+	if kind == "FOUNTAIN_BROKEN" or (kind == "STRUCTURE_DESTROYED" and target == "VillageFountain"):
+		urgent = true
+		# It invents nothing. The fountain is dry and the whole village can see it.
+		text = "The Knight has taken\nthe water from your\nchildren's mouths."
+	elif kind in ["STRUCTURE_HIT", "STRUCTURE_DESTROYED"]:
 		if target == "Mirror":
 			text = "They strike at the\nvoice of the Kingdom.\nIt is not silenced."
 		elif target.begins_with("VillageHouse"):
@@ -133,6 +146,12 @@ func _on_event(event: Dictionary) -> void:
 			return
 	var entry := event.duplicate()
 	entry.message = text
-	pending.append(entry)
+	if urgent:
+		# The water stopping cuts whatever is on the screen. Everything else waits
+		# its turn; this is the thing the whole village is looking at.
+		pending.push_front(entry)
+		remaining = 0.0
+	else:
+		pending.append(entry)
 	if pending.size() > 4:
-		pending.pop_front()
+		pending.pop_back() if urgent else pending.pop_front()
