@@ -31,7 +31,15 @@ func run() -> void:
 	assert(dragon.falling, "A round in the banner brings it down")
 	assert(dragon.get_node("Hitbox").collision_layer == 0,
 		"A falling dragon must not be shot a second time")
+	# The tumble is drawn art, so the falling sheet must actually be on screen and
+	# the banner must be re-cut to follow the cloth as the pose changes.
+	assert(dragon.sprite.texture.atlas == dragon.FALLING_SHEET,
+		"A falling dragon must wear the falling poses")
+	var cut: int = dragon._shown
+	var cloth_before: PackedVector2Array = dragon.banner.polygon
 	await steps(120)
+	assert(dragon._shown != cut or not dragon.banner.polygon.is_equal_approx(cloth_before),
+		"The banner must follow the cloth through the tumble")
 	assert(dragon.position.y > height + 120.0, "A downed dragon must go down")
 	print("DRAGON downed, fell ", int(dragon.position.y - height), " behind the plateau")
 	# It must clear itself away rather than pile up under the world.

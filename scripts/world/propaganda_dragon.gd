@@ -9,6 +9,7 @@ extends Node2D
 # street, just the Kingdom's voice dropping out of the sky.
 
 const SHEET = preload("res://assets/propaganda/dragon_banner_blank.png")
+const FALLING_SHEET = preload("res://assets/propaganda/dragon_banner_falling.png")
 const HAZE = preload("res://scripts/village/house_haze.gdshader")
 const FRAME := Vector2i(1024, 307)
 const POSES := 5
@@ -29,6 +30,17 @@ const CLOTH := [
 	Vector3(930, 209, 266),
 ]
 
+# The falling poses are drawn art, not the flying dragon rotated, so the banner
+# swings to a different place in every one of them. One traced outline per pose,
+# and the cloth is rebuilt as the pose changes.
+const FALL_CLOTH := [
+	[Vector3(602,94,136), Vector3(629,81,133), Vector3(656,84,138), Vector3(683,92,148), Vector3(710,108,164), Vector3(737,140,180), Vector3(764,143,195), Vector3(790,150,202), Vector3(817,152,205), Vector3(844,146,201), Vector3(871,133,191), Vector3(898,121,179), Vector3(925,142,171)],
+	[Vector3(613,104,133), Vector3(640,77,131), Vector3(667,81,135), Vector3(694,91,146), Vector3(721,105,161), Vector3(748,120,180), Vector3(775,132,192), Vector3(801,139,197), Vector3(828,137,195), Vector3(855,131,187), Vector3(882,123,177), Vector3(909,115,169), Vector3(936,131,166)],
+	[Vector3(610,76,118), Vector3(637,63,118), Vector3(664,68,125), Vector3(690,81,139), Vector3(717,103,145), Vector3(744,132,187), Vector3(770,144,201), Vector3(797,150,206), Vector3(824,145,203), Vector3(851,133,191), Vector3(878,124,179), Vector3(904,119,171), Vector3(931,139,171)],
+	[Vector3(610,54,99), Vector3(636,43,103), Vector3(662,48,106), Vector3(688,63,121), Vector3(714,90,138), Vector3(740,121,188), Vector3(766,145,208), Vector3(793,158,216), Vector3(819,160,216), Vector3(845,152,209), Vector3(871,140,197), Vector3(897,132,186), Vector3(923,151,180)],
+	[Vector3(618,109,138), Vector3(644,80,135), Vector3(670,75,132), Vector3(697,75,135), Vector3(723,85,143), Vector3(749,104,157), Vector3(776,137,180), Vector3(802,152,198), Vector3(828,155,203), Vector3(854,143,198), Vector3(880,124,185), Vector3(907,112,171), Vector3(933,134,167)],
+]
+
 const GLASS := Vector2(660, 110)   # the viewport the banner text is written into
 const BEAT := 0.17                 # seconds a wing pose is held
 const DRIFT := 74.0                # how fast it crosses the kingdom
@@ -42,7 +54,7 @@ var falling := false
 
 var _pose := 0.0
 var _drop := 0.0
-var _tilt := 0.0
+var _shown := -1   # which falling pose the banner is currently cut for
 
 func _ready() -> void:
 	# Behind the terrain, which sits at -9, and in front of the far landscape
@@ -83,15 +95,19 @@ func _process(delta: float) -> void:
 	var pose := int(_pose / BEAT) % POSES
 	sprite.texture.region = Rect2(0, pose * FRAME.y, FRAME.x, FRAME.y)
 	if falling:
-		# It never crashes in view. It loses the air, slews over, and goes down
-		# behind the plateau.
+		# It never crashes in view. It loses the air and goes down behind the
+		# plateau. The tumble is drawn, not a rotation applied to the flying pose,
+		# so the banner is re-cut to follow the cloth in each falling frame.
+		if pose != _shown:
+			_shown = pose
+			_cut_cloth(FALL_CLOTH[pose])
 		_drop = minf(_drop + 520.0 * delta, 760.0)
-		_tilt = minf(_tilt + 0.9 * delta, 0.62)
-		rotation = _tilt
 		position += Vector2(DRIFT * 0.45, _drop) * delta
 		if position.y > 1100.0:
 			queue_free()
 		return
+	if _shown != -1:
+		_shown = -1
 	position.x += DRIFT * delta
 	# A slow rise and fall, so it reads as flying rather than sliding.
 	position.y += sin(_pose * 0.8) * 7.0 * delta
@@ -104,6 +120,8 @@ func apply_explosion_damage(_amount: int, _source: Vector2, _ratio := 1.0, _radi
 	if falling:
 		return
 	falling = true
+	_pose = 0.0
+	sprite.texture.atlas = FALLING_SHEET
 	get_node("Hitbox").collision_layer = 0
 	EventBus.world_event.emit({
 		"type": "PROPAGANDA_DRAGON_DOWNED",
@@ -139,13 +157,19 @@ func _write_banner() -> void:
 	banner = Polygon2D.new()
 	banner.texture = viewport.get_texture()
 	banner.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	add_child(banner)
+	_cut_cloth(CLOTH)
+
+
+# Lays the written banner over one traced outline of the cloth.
+func _cut_cloth(cloth: Array) -> void:
 	var points := PackedVector2Array()
 	var mapping := PackedVector2Array()
 	var faces := []
-	var span: float = CLOTH[CLOTH.size() - 1].x - CLOTH[0].x
-	for i in CLOTH.size():
-		var column: Vector3 = CLOTH[i]
-		var along: float = (column.x - CLOTH[0].x) / span
+	var span: float = cloth[cloth.size() - 1].x - cloth[0].x
+	for i in cloth.size():
+		var column: Vector3 = cloth[i]
+		var along: float = (column.x - cloth[0].x) / span
 		# Pulled a little inside the cloth so the writing never touches the hem.
 		var top: float = lerpf(column.y, column.z, 0.14)
 		var bottom: float = lerpf(column.y, column.z, 0.86)
@@ -153,12 +177,11 @@ func _write_banner() -> void:
 		mapping.append(Vector2(GLASS.x * along, 0.0))
 		points.append(Vector2(column.x, bottom) * art_scale)
 		mapping.append(Vector2(GLASS.x * along, GLASS.y))
-	for i in CLOTH.size() - 1:
+	for i in cloth.size() - 1:
 		faces.append(PackedInt32Array([i * 2, i * 2 + 2, i * 2 + 3, i * 2 + 1]))
 	banner.polygon = points
 	banner.uv = mapping
 	banner.polygons = faces
-	add_child(banner)
 
 func _haze(item: CanvasItem) -> void:
 	var material := ShaderMaterial.new()
