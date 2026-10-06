@@ -54,6 +54,10 @@ func _ready() -> void:
 	tower.set_script(preload("res://scripts/destruction/physical_castle_tower.gd"))
 	tower.kind = "castle"
 	$Structures/Castle.add_child(tower)
+	var sky := Node2D.new()
+	sky.name = "PropagandaSky"
+	sky.set_script(preload("res://scripts/world/propaganda_sky.gd"))
+	add_child(sky)
 	var society := Node.new()
 	society.name = "Society"
 	society.set_script(preload("res://scripts/systems/kingdom_society.gd"))
