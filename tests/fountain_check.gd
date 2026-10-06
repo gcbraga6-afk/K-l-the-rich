@@ -14,8 +14,8 @@ func run() -> void:
 	var fountain = world.get_node("Structures/VillageFountain")
 	assert(fountain != null, "The village must have its fountain")
 	var ground: float = preload("res://scripts/world/terraces.gd").walking_y(2210.0)
-	var factor: float = fountain.stone_height / fountain.FLOW_HEIGHT
-	var foot: float = fountain.position.y + fountain.FLOW_FOOT * factor
+	var factor: float = fountain._factor()
+	var foot: float = fountain.position.y + fountain.FOOT * factor
 	assert(absf(foot - ground) < 2.0, "The stone must stand on the street, not float")
 	# The water must move and the stone must not. The flowing frames were redrawn on
 	# one unchanging fountain, so the stone needs no shift — but a future sheet drawn
@@ -59,12 +59,15 @@ func run() -> void:
 		fountain.apply_explosion_damage(1, fountain.global_position)
 		await steps(10)
 	assert(fountain.dry, "Three rounds must take the water")
-	assert(fountain.sprite.texture.atlas == fountain.DRY_SHEET, "A broken fountain shows the dry stone")
-	# Matched on the stone's height and on the ground, so drying does not make the
-	# fountain jump or change size.
-	var dry_factor: float = fountain.stone_height / fountain.DRY_HEIGHT
-	var dry_foot: float = fountain.position.y + fountain.sprite.position.y + fountain.DRY_FOOT * dry_factor
-	assert(absf(dry_foot - ground) < 3.0, "The dry fountain must stand on the same stone")
+	# One sheet for all four states, so drying cannot change the fountain's size or
+	# place: an earlier pair of sheets disagreed by a seventh in width.
+	assert(fountain.sprite.texture.region.position.x == fountain.DRY * fountain.FRAME.x,
+		"A broken fountain shows the dry stone")
+	# Compared loosely on purpose: a Vector2 holds single precision, so its component
+	# never equals the double the scale was computed from.
+	assert(is_equal_approx(fountain.sprite.scale.x, factor),
+		"Drying must not resize the fountain")
+	assert(fountain.sprite.position.is_zero_approx(), "Drying must not move the fountain")
 	await steps(30)
 	said = broadcast.current_message
 	print("FOUNTAIN dry, mirror says: ", said.replace("\n", " "))
