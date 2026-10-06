@@ -30,6 +30,29 @@ func run() -> void:
 	assert(stone_at.size() == 1, "The stone must hold still while the water runs")
 	assert(not fountain.dry, "A fountain nobody shot must have water")
 	print("FOUNTAIN running, ", seen.size(), " states of flow")
+	# Everything in the structures group must answer what a blast asks of it. The
+	# fountain joined that group with only apply_explosion_damage, so the first
+	# round fired in the real game crashed on the missing closest_point.
+	for node in get_tree().get_nodes_in_group("structures"):
+		assert(node.has_method("closest_point"),
+			"%s is in the structures group but cannot be asked where it is" % node.name)
+		assert(node.has_method("apply_explosion_damage"),
+			"%s is in the structures group but cannot be damaged" % node.name)
+	var reach: Vector2 = fountain.closest_point(fountain.global_position + Vector2(400, 0))
+	assert(reach.x < fountain.global_position.x + 400.0, "The fountain must report its own edge")
+	# A real round, through the real blast. Every test here called
+	# apply_explosion_damage by hand, which exercises the method I remembered to
+	# write rather than the path the game takes — and the game crashed on the first
+	# shot while ten tests stayed green.
+	# The real scene, not a bare node wearing the script: an explosion expects the
+	# children its scene gives it, and building one by hand tests a different thing.
+	var blast = load("res://scenes/explosion.tscn").instantiate()
+	world.add_child(blast)
+	blast.global_position = fountain.global_position + Vector2(0, -40)
+	blast._apply_damage()
+	await steps(10)
+	assert(fountain._integrity < fountain.max_integrity, "A real blast must reach the fountain")
+	blast.queue_free()
 	var said := ""
 	var broadcast = world.get_node("Structures/Mirror/Broadcast")
 	for hit in range(3):

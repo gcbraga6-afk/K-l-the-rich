@@ -52,6 +52,7 @@ func _ready() -> void:
 	_show(0)
 	collision_layer = 1
 	var shape := CollisionShape2D.new()
+	shape.name = "CollisionShape2D"
 	var box := RectangleShape2D.new()
 	# The basin and the column, not the empty sky around the jets.
 	var factor: float = stone_height / FLOW_HEIGHT
@@ -115,6 +116,18 @@ func _show_dry() -> void:
 	sprite.position = Vector2(
 		(333.0 * stone_height / FLOW_HEIGHT) - (266.0 * factor),
 		(FLOW_FOOT * stone_height / FLOW_HEIGHT) - (DRY_FOOT * factor))
+
+
+# Everything in the "structures" group has to answer this: a blast asks each one
+# how near it is before working out the damage. Leaving it out crashed the game on
+# every explosion — joining the group means meeting the whole contract, not just
+# the one method that looked relevant.
+func closest_point(point: Vector2) -> Vector2:
+	var shape: CollisionShape2D = get_node("CollisionShape2D")
+	var box: RectangleShape2D = shape.shape
+	var rect := Rect2(global_position + shape.position - box.size * 0.5, box.size)
+	return Vector2(clampf(point.x, rect.position.x, rect.end.x),
+		clampf(point.y, rect.position.y, rect.end.y))
 
 
 # Stands the fountain on the ground at `x`, with its stone foot on the terrace.
