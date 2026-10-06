@@ -9,25 +9,30 @@ extends StaticBody2D
 # side of that. Shelling it hands the Crown the best propaganda of the match,
 # and the Crown will not have to invent a word of it.
 
-const SHEET = preload("res://assets/props/fountain_states.png")
-const FRAME := Vector2i(512, 768)
-const FOOT := 718          # where the stone meets the ground inside a frame
+const FLOW_SHEET = preload("res://assets/props/fountain_flow.png")
+const DRY_SHEET = preload("res://assets/props/fountain_states.png")
 
-# Read straight off the sheet, in the order it is drawn.
-enum { DRY, TRICKLE, MIDDLING, FULL }
-const FLOW := [MIDDLING, FULL, MIDDLING, TRICKLE]   # the loop that reads as running water
+# The flowing frames were redrawn on one unchanging fountain, so the stone holds
+# still on its own: measured, its left edge sits at x=78, 79, 78 across the three
+# and its top at y=9 in all of them. No per-frame shift is needed any more.
+const FLOW_FRAME := Vector2i(666, 667)
+const FLOW_FOOT := 652          # where the stone meets the ground inside a flowing frame
+const FLOW_HEIGHT := 643.0      # the stone's height there, used to match the dry frame
 
-# Where the stone's left edge actually sits inside each frame, measured off the
-# sheet. The four states are not drawn on the same spot, so left alone the
-# fountain jumped twenty-two pixels sideways on every change of frame — a
-# fountain shivering in the street. Holding `STONE_X + shift` constant puts the
-# stone in one place and leaves only the water moving.
-const STONE_X := [28.0, 8.0, 28.0, 6.0]
+# The dry fountain still comes from the first sheet, which was drawn to different
+# proportions — its stone is 477 by 699 against 511 by 643 here. Scaled to the same
+# height it stands about a seventh narrower, which shows at the moment the water
+# stops. A dry frame drawn on the new fountain would remove that.
+const DRY_FRAME := Vector2i(512, 768)
+const DRY_FOOT := 718
+const DRY_HEIGHT := 699.0
+
 const BEAT := 0.22
 
 @export var max_integrity := 3
 
-var art_scale := 0.24
+# How tall the stone stands in the street.
+var stone_height := 165.0
 var dry := false
 var _integrity := 0
 var _beat := 0.0
@@ -37,30 +42,32 @@ func _ready() -> void:
 	add_to_group("structures")
 	_integrity = max_integrity
 	var atlas := AtlasTexture.new()
-	atlas.atlas = SHEET
+	atlas.atlas = FLOW_SHEET
 	atlas.filter_clip = true
-	atlas.region = _region(FULL)
 	sprite = Sprite2D.new()
 	sprite.texture = atlas
 	sprite.centered = false
-	sprite.scale = Vector2.ONE * art_scale
 	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	add_child(sprite)
-	_show(FULL)
+	_show(0)
 	collision_layer = 1
 	var shape := CollisionShape2D.new()
 	var box := RectangleShape2D.new()
 	# The basin and the column, not the empty sky around the jets.
-	box.size = Vector2(330, 420) * art_scale
+	var factor: float = stone_height / FLOW_HEIGHT
+	box.size = Vector2(430, 430) * factor
 	shape.shape = box
-	shape.position = Vector2(256, FOOT - 210) * art_scale
+	shape.position = Vector2(333, FLOW_FOOT - 215) * factor
 	add_child(shape)
 
 func _process(delta: float) -> void:
 	if dry:
 		return
 	_beat += delta
-	_show(FLOW[int(_beat / BEAT) % FLOW.size()])
+	# Up and back down, so the jets surge rather than snapping from weak to strong.
+	const SURGE := [0, 1, 2, 1]
+	_show(SURGE[int(_beat / BEAT) % SURGE.size()])
+
 
 func apply_explosion_damage(amount: int, source_position: Vector2, _ratio := 1.0, _radius := 155.0, _heading := Vector2.ZERO, _cascade := true) -> void:
 	if dry:
@@ -78,7 +85,7 @@ func apply_explosion_damage(amount: int, source_position: Vector2, _ratio := 1.0
 	# The jets stop and the basin empties. The fountain is still standing, which is
 	# the point: the village can see exactly what was taken and what is left.
 	dry = true
-	_show(DRY)
+	_show_dry()
 	EventBus.world_event.emit({
 		"type": "FOUNTAIN_BROKEN",
 		"target": name,
@@ -87,17 +94,31 @@ func apply_explosion_damage(amount: int, source_position: Vector2, _ratio := 1.0
 		"narrative_value": 1.0,
 	})
 
-# Puts one state on screen with the stone held still.
-func _show(state: int) -> void:
-	sprite.texture.region = _region(state)
-	sprite.position.x = (STONE_X[DRY] - STONE_X[state]) * art_scale
+# One of the three flowing frames.
+func _show(frame: int) -> void:
+	var factor: float = stone_height / FLOW_HEIGHT
+	sprite.texture.atlas = FLOW_SHEET
+	sprite.texture.region = Rect2(frame * FLOW_FRAME.x, 0, FLOW_FRAME.x, FLOW_FRAME.y)
+	sprite.scale = Vector2.ONE * factor
+	sprite.position = Vector2.ZERO
 
 
-func _region(state: int) -> Rect2:
-	# The sheet is two by two, read left to right and top to bottom.
-	return Rect2((state % 2) * FRAME.x, (state / 2) * FRAME.y, FRAME.x, FRAME.y)
+# The jets stop and the basin empties, from the older sheet. Matched on the height
+# of the stone and on the ground its foot stands on, so it does not jump; it is
+# still a touch narrower, which only a dry frame on the new fountain can fix.
+func _show_dry() -> void:
+	var factor: float = stone_height / DRY_HEIGHT
+	sprite.texture.atlas = DRY_SHEET
+	sprite.texture.region = Rect2(0, 0, DRY_FRAME.x, DRY_FRAME.y)
+	sprite.scale = Vector2.ONE * factor
+	# Hold the column where it was, and the foot on the same stone.
+	sprite.position = Vector2(
+		(333.0 * stone_height / FLOW_HEIGHT) - (266.0 * factor),
+		(FLOW_FOOT * stone_height / FLOW_HEIGHT) - (DRY_FOOT * factor))
+
 
 # Stands the fountain on the ground at `x`, with its stone foot on the terrace.
 func stand_at(x: float) -> void:
 	var ground: float = preload("res://scripts/world/terraces.gd").walking_y(x)
-	position = Vector2(x - FRAME.x * art_scale * 0.5, ground - FOOT * art_scale)
+	var factor: float = stone_height / FLOW_HEIGHT
+	position = Vector2(x - 333.0 * factor, ground - FLOW_FOOT * factor)

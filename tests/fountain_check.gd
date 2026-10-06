@@ -14,24 +14,19 @@ func run() -> void:
 	var fountain = world.get_node("Structures/VillageFountain")
 	assert(fountain != null, "The village must have its fountain")
 	var ground: float = preload("res://scripts/world/terraces.gd").walking_y(2210.0)
-	var foot: float = fountain.position.y + fountain.FOOT * fountain.art_scale
+	var factor: float = fountain.stone_height / fountain.FLOW_HEIGHT
+	var foot: float = fountain.position.y + fountain.FLOW_FOOT * factor
 	assert(absf(foot - ground) < 2.0, "The stone must stand on the street, not float")
-	# Water has to move, or it is a photograph of a fountain.
-	# The water must move and the stone must not. The four states are drawn on
-	# different spots in the sheet, so an uncompensated animation shivers the whole
-	# fountain sideways on every change of frame.
+	# The water must move and the stone must not. The flowing frames were redrawn on
+	# one unchanging fountain, so the stone needs no shift — but a future sheet drawn
+	# out of register would shiver the whole thing, which is what happened before.
 	var seen := {}
 	var stone_at := {}
 	for i in range(40):
 		await steps(6)
-		seen[fountain.sprite.texture.region.position] = true
-		# Where the stone actually lands: its place inside the frame, plus the shift
-		# applied to cancel the frame's own offset.
-		var state: int = int(fountain.sprite.texture.region.position.x / fountain.FRAME.x) \
-			+ 2 * int(fountain.sprite.texture.region.position.y / fountain.FRAME.y)
-		stone_at[snappedf(fountain.sprite.position.x
-			+ fountain.STONE_X[state] * fountain.art_scale, 0.01)] = true
-	assert(seen.size() >= 2, "The jets must run")
+		seen[fountain.sprite.texture.region.position.x] = true
+		stone_at[snappedf(fountain.sprite.position.x + 78.0 * fountain.sprite.scale.x, 0.01)] = true
+	assert(seen.size() >= 3, "All three jets must be used")
 	assert(stone_at.size() == 1, "The stone must hold still while the water runs")
 	assert(not fountain.dry, "A fountain nobody shot must have water")
 	print("FOUNTAIN running, ", seen.size(), " states of flow")
@@ -41,7 +36,12 @@ func run() -> void:
 		fountain.apply_explosion_damage(1, fountain.global_position)
 		await steps(10)
 	assert(fountain.dry, "Three rounds must take the water")
-	assert(fountain.sprite.texture.region.position == Vector2(0, 0), "A broken fountain shows the dry stone")
+	assert(fountain.sprite.texture.atlas == fountain.DRY_SHEET, "A broken fountain shows the dry stone")
+	# Matched on the stone's height and on the ground, so drying does not make the
+	# fountain jump or change size.
+	var dry_factor: float = fountain.stone_height / fountain.DRY_HEIGHT
+	var dry_foot: float = fountain.position.y + fountain.sprite.position.y + fountain.DRY_FOOT * dry_factor
+	assert(absf(dry_foot - ground) < 3.0, "The dry fountain must stand on the same stone")
 	await steps(30)
 	said = broadcast.current_message
 	print("FOUNTAIN dry, mirror says: ", said.replace("\n", " "))
