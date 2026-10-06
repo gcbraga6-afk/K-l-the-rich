@@ -163,6 +163,8 @@ LIVE e ao vivo. Nao ha captura, replay, gravacao ou arquivo de video. O poder da
 
 Propaganda nao cria realidade do nada. Ela enquadra acontecimentos reais, explorando medo, conveniencia, experiencia material, Prestigio e contradicoes visiveis.
 
+O sistema detalhado do Espelho esta em `ESPELHO.md`: quem ocupa o canal, a progressao da linguagem institucional, a biblioteca de mensagens e o que ainda esta em aberto.
+
 ## Pigeon
 
 O Pigeon e definitivo no design atual.
