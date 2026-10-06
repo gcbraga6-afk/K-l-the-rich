@@ -47,5 +47,3 @@ func _apply_damage() -> void:
 		var falloff := 1.0 - distance / radius
 		var damage := maxi(1, ceili(float(max_damage) * falloff))
 		node.apply_explosion_damage(damage, global_position, falloff, radius, heading)
-
-

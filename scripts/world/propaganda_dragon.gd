@@ -11,7 +11,12 @@ extends Node2D
 const SHEET = preload("res://assets/propaganda/dragon_banner_blank.png")
 const FALLING_SHEET = preload("res://assets/propaganda/dragon_banner_falling.png")
 const HAZE = preload("res://scripts/village/house_haze.gdshader")
-const FRAME := Vector2i(1024, 307)
+# The two sheets are cut differently. The flying one was rebuilt so every frame
+# holds the banner at the same height — drawn as generated, its frames straddled
+# the grid and the neighbour's wing bled into view. The falling sheet keeps the
+# grid it was drawn on.
+const FRAME := Vector2i(1024, 352)
+const FALL_FRAME := Vector2i(1024, 307)
 const POSES := 5
 
 # The cloth, traced out of the artwork: for each column, where the banner's top
@@ -19,15 +24,13 @@ const POSES := 5
 # bend the writing across its diagonal seam — the same fault the Mirror had. One
 # strip per pair of columns keeps the line of text riding the wave.
 const CLOTH := [
-	Vector3(600, 211, 266), Vector3(614, 212, 268), Vector3(628, 215, 269),
-	Vector3(641, 217, 271), Vector3(655, 220, 273), Vector3(669, 223, 276),
-	Vector3(682, 226, 269), Vector3(696, 228, 280), Vector3(710, 231, 283),
-	Vector3(724, 232, 286), Vector3(738, 234, 287), Vector3(751, 236, 283),
-	Vector3(765, 236, 290), Vector3(779, 236, 289), Vector3(792, 234, 288),
-	Vector3(806, 232, 285), Vector3(820, 232, 282), Vector3(834, 229, 278),
-	Vector3(848, 225, 276), Vector3(861, 222, 275), Vector3(875, 219, 272),
-	Vector3(889, 215, 271), Vector3(902, 212, 268), Vector3(916, 210, 267),
-	Vector3(930, 209, 266),
+	Vector3(578,192,232), Vector3(593,186,241), Vector3(609,187,243), Vector3(624,190,245),
+	Vector3(640,193,247), Vector3(655,195,249), Vector3(670,197,252), Vector3(686,202,252),
+	Vector3(701,204,256), Vector3(716,207,260), Vector3(732,208,263), Vector3(747,210,263),
+	Vector3(762,211,266), Vector3(778,211,265), Vector3(793,210,264), Vector3(809,207,261),
+	Vector3(824,205,258), Vector3(839,202,255), Vector3(855,198,252), Vector3(870,195,250),
+	Vector3(886,191,247), Vector3(901,188,245), Vector3(916,186,243), Vector3(932,185,242),
+	Vector3(947,199,232),
 ]
 
 # The falling poses are drawn art, not the flying dragon rotated, so the banner
@@ -43,7 +46,10 @@ const FALL_CLOTH := [
 
 const GLASS := Vector2(660, 110)   # the viewport the banner text is written into
 const BEAT := 0.17                 # seconds a wing pose is held
-const DRIFT := 74.0                # how fast it crosses the kingdom
+# The dragon is drawn facing left, with the banner trailing away to the right, so
+# it travels left. Sent the other way it flew backwards, towing its own banner
+# ahead of it.
+const DRIFT := -74.0               # how fast it crosses the kingdom, and which way
 
 var message := "STRONG KING. KIND HAND."
 var art_scale := 0.46
@@ -93,7 +99,8 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	_pose += delta
 	var pose := int(_pose / BEAT) % POSES
-	sprite.texture.region = Rect2(0, pose * FRAME.y, FRAME.x, FRAME.y)
+	var cell: Vector2i = FALL_FRAME if falling else FRAME
+	sprite.texture.region = Rect2(0, pose * cell.y, cell.x, cell.y)
 	if falling:
 		# It never crashes in view. It loses the air and goes down behind the
 		# plateau. The tumble is drawn, not a rotation applied to the flying pose,
@@ -111,7 +118,7 @@ func _process(delta: float) -> void:
 	position.x += DRIFT * delta
 	# A slow rise and fall, so it reads as flying rather than sliding.
 	position.y += sin(_pose * 0.8) * 7.0 * delta
-	if position.x > preload("res://scripts/world/terraces.gd").WORLD_WIDTH + 700.0:
+	if position.x < -1500.0:
 		queue_free()
 
 # A round in the banner takes the dragon down. There is no partial damage: a

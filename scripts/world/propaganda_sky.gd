@@ -32,5 +32,7 @@ func _process(delta: float) -> void:
 	add_child(dragon)
 	dragon.say(LINES[_said % LINES.size()])
 	_said += 1
-	# Enters from behind the knight's shoulder and crosses the whole kingdom.
-	dragon.position = Vector2(-620.0, 92.0 + randf_range(-26.0, 26.0))
+	# Enters over the castle and flies down the kingdom towards the knight, which is
+	# the way the art faces.
+	dragon.position = Vector2(preload("res://scripts/world/terraces.gd").WORLD_WIDTH + 200.0,
+		92.0 + randf_range(-26.0, 26.0))

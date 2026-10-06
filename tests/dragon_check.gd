@@ -24,7 +24,10 @@ func run() -> void:
 	assert(hitbox.collision_layer == 16, "A round must be able to find the dragon")
 	var started: float = dragon.position.x
 	await steps(90)
-	assert(dragon.position.x > started, "The dragon must cross the kingdom")
+	# It is drawn facing left with the banner trailing right, so it must travel
+	# left. Sent the other way it flew backwards, towing its own banner ahead of it.
+	assert(dragon.position.x < started, "The dragon must fly the way it faces")
+	assert(dragon.DRIFT < 0.0, "The art faces left, so the drift must be leftward")
 	print("DRAGON flying, depth ", dragon.z_index, " against terrain ", terrain_depth)
 	var height: float = dragon.position.y
 	dragon.apply_explosion_damage(2, dragon.global_position)
