@@ -17,11 +17,22 @@ func run() -> void:
 	var foot: float = fountain.position.y + fountain.FOOT * fountain.art_scale
 	assert(absf(foot - ground) < 2.0, "The stone must stand on the street, not float")
 	# Water has to move, or it is a photograph of a fountain.
+	# The water must move and the stone must not. The four states are drawn on
+	# different spots in the sheet, so an uncompensated animation shivers the whole
+	# fountain sideways on every change of frame.
 	var seen := {}
+	var stone_at := {}
 	for i in range(40):
 		await steps(6)
 		seen[fountain.sprite.texture.region.position] = true
+		# Where the stone actually lands: its place inside the frame, plus the shift
+		# applied to cancel the frame's own offset.
+		var state: int = int(fountain.sprite.texture.region.position.x / fountain.FRAME.x) \
+			+ 2 * int(fountain.sprite.texture.region.position.y / fountain.FRAME.y)
+		stone_at[snappedf(fountain.sprite.position.x
+			+ fountain.STONE_X[state] * fountain.art_scale, 0.01)] = true
 	assert(seen.size() >= 2, "The jets must run")
+	assert(stone_at.size() == 1, "The stone must hold still while the water runs")
 	assert(not fountain.dry, "A fountain nobody shot must have water")
 	print("FOUNTAIN running, ", seen.size(), " states of flow")
 	var said := ""

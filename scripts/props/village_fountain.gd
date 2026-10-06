@@ -16,6 +16,13 @@ const FOOT := 718          # where the stone meets the ground inside a frame
 # Read straight off the sheet, in the order it is drawn.
 enum { DRY, TRICKLE, MIDDLING, FULL }
 const FLOW := [MIDDLING, FULL, MIDDLING, TRICKLE]   # the loop that reads as running water
+
+# Where the stone's left edge actually sits inside each frame, measured off the
+# sheet. The four states are not drawn on the same spot, so left alone the
+# fountain jumped twenty-two pixels sideways on every change of frame — a
+# fountain shivering in the street. Holding `STONE_X + shift` constant puts the
+# stone in one place and leaves only the water moving.
+const STONE_X := [28.0, 8.0, 28.0, 6.0]
 const BEAT := 0.22
 
 @export var max_integrity := 3
@@ -39,6 +46,7 @@ func _ready() -> void:
 	sprite.scale = Vector2.ONE * art_scale
 	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	add_child(sprite)
+	_show(FULL)
 	collision_layer = 1
 	var shape := CollisionShape2D.new()
 	var box := RectangleShape2D.new()
@@ -52,7 +60,7 @@ func _process(delta: float) -> void:
 	if dry:
 		return
 	_beat += delta
-	sprite.texture.region = _region(FLOW[int(_beat / BEAT) % FLOW.size()])
+	_show(FLOW[int(_beat / BEAT) % FLOW.size()])
 
 func apply_explosion_damage(amount: int, source_position: Vector2, _ratio := 1.0, _radius := 155.0, _heading := Vector2.ZERO, _cascade := true) -> void:
 	if dry:
@@ -70,7 +78,7 @@ func apply_explosion_damage(amount: int, source_position: Vector2, _ratio := 1.0
 	# The jets stop and the basin empties. The fountain is still standing, which is
 	# the point: the village can see exactly what was taken and what is left.
 	dry = true
-	sprite.texture.region = _region(DRY)
+	_show(DRY)
 	EventBus.world_event.emit({
 		"type": "FOUNTAIN_BROKEN",
 		"target": name,
@@ -78,6 +86,12 @@ func apply_explosion_damage(amount: int, source_position: Vector2, _ratio := 1.0
 		"severity": 1.0,
 		"narrative_value": 1.0,
 	})
+
+# Puts one state on screen with the stone held still.
+func _show(state: int) -> void:
+	sprite.texture.region = _region(state)
+	sprite.position.x = (STONE_X[DRY] - STONE_X[state]) * art_scale
+
 
 func _region(state: int) -> Rect2:
 	# The sheet is two by two, read left to right and top to bottom.
