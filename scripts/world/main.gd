@@ -14,6 +14,7 @@ func _ready() -> void:
 	$WorldBounds/Ground/GroundVisual.hide()
 	$WorldBounds/DryCracks.hide()
 	var landscape := Node2D.new()
+	landscape.name = "Landscape"
 	landscape.set_script(preload("res://scripts/art/kingdom_landscape.gd"))
 	add_child(landscape)
 	for building in $Structures.get_children():

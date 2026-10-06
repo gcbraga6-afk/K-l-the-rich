@@ -15,11 +15,20 @@ func run() -> void:
 	# Rather than wait out the patrol, send one up at once.
 	sky._next = 0.0
 	await steps(4)
-	var dragon = sky.get_child(0)
-	assert(dragon != null, "A dragon must take off")
+	var aloft: Array = get_tree().get_nodes_in_group("propaganda_dragons")
+	assert(aloft.size() == 1, "A dragon must take off, and only one")
+	var dragon = aloft[0]
 	var terrain_depth: int = world.get_node("Terraces").z_index
 	assert(dragon.z_index < terrain_depth,
 		"The dragon must fly behind the terrain, or it cannot fall behind the plateau")
+	# Behind the tree line: it belongs to the far landscape, and the near woodland
+	# must pass in front of it.
+	var landscape = world.get_node("Landscape")
+	assert(dragon.get_parent() == landscape, "The dragon belongs to the far landscape")
+	assert(dragon.get_index() < landscape.get_node("WoodlandDepth").get_index(),
+		"The trees must cross in front of the dragon")
+	assert(dragon.get_index() > landscape.get_node("ValleyDepth").get_index(),
+		"The dragon must still read in front of the far valley")
 	var hitbox = dragon.get_node("Hitbox")
 	assert(hitbox.collision_layer == 16, "A round must be able to find the dragon")
 	var started: float = dragon.position.x

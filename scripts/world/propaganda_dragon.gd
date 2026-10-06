@@ -52,7 +52,7 @@ const BEAT := 0.17                 # seconds a wing pose is held
 const DRIFT := -74.0               # how fast it crosses the kingdom, and which way
 
 var message := "STRONG KING. KIND HAND."
-var art_scale := 0.46
+var art_scale := 0.92
 var sprite: Sprite2D
 var banner: Polygon2D
 var viewport: SubViewport
@@ -63,10 +63,13 @@ var _drop := 0.0
 var _shown := -1   # which falling pose the banner is currently cut for
 
 func _ready() -> void:
-	# Behind the terrain, which sits at -9, and in front of the far landscape
-	# bands at -20. That one number is the whole shoot-down: a falling dragon
-	# simply sinks behind the plateau, with nothing to clip or mask.
-	z_index = -10
+	add_to_group("propaganda_dragons")
+	# Out at the depth of the far landscape, so it passes behind the tree line. The
+	# bands sit there too, and the sky node inserts the dragon between the valley
+	# and the woodland, so the trees cross in front of it while the mountains stay
+	# behind. It is also behind the terrain at -9, which is the whole shoot-down: a
+	# falling dragon simply sinks behind the plateau, with nothing to clip or mask.
+	z_index = -20
 	z_as_relative = false
 	var atlas := AtlasTexture.new()
 	atlas.atlas = SHEET
