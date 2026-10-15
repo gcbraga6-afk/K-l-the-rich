@@ -94,6 +94,15 @@ func _ready() -> void:
 	broadcast.set_script(preload("res://scripts/systems/mirror_broadcast.gd"))
 	$Structures/Mirror.add_child(broadcast)
 
+	# The Pigeon, after the mirror has its broadcast: it looks the broadcast up as it
+	# enters the tree. It was written and never put into the world — the knight's
+	# only way into the Kingdom's own channel, which the design calls the point of
+	# the whole mirror.
+	var pigeon := Node2D.new()
+	pigeon.name = "Pigeon"
+	pigeon.set_script(preload("res://scripts/systems/pigeon.gd"))
+	add_child(pigeon)
+
 	EventBus.projectile_fired.connect(_on_projectile_fired)
 	EventBus.projectile_impacted.connect(_on_projectile_impacted)
 	EventBus.intervention_ended.connect(_on_intervention_ended)

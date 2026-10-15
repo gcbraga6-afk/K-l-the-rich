@@ -16,6 +16,7 @@ var pending: Array[Dictionary] = []
 var remaining := 0.0
 var active_event: Dictionary = {}
 var delivered := false
+var live := false   # the Knight holds the channel
 
 func _ready() -> void:
 	mirror = get_parent()
@@ -81,8 +82,43 @@ func _ready() -> void:
 	add_child(screen)
 	EventBus.world_event.connect(_on_event)
 
+# The Knight has the channel. The Kingdom's own programme stops dead and the glass
+# carries whatever the Pigeon is looking at, live — no recording, no replay, which
+# is the whole of its power in the design.
+func begin_live(feed: Texture2D) -> void:
+	live = true
+	screen.texture = feed
+	pending.clear()
+	active_event = {}
+	remaining = 0.0
+	EventBus.world_event.emit({
+		"type": "LIVE_STARTED", "target": "Mirror", "cause": "knight",
+		"position": mirror.global_position, "narrative_value": 1.0,
+	})
+
+
+# The bird is off the mirror and the Crown has its screen back. It does not
+# acknowledge what was just on it.
+func end_live() -> void:
+	if not live:
+		return
+	live = false
+	screen.texture = viewport.get_texture()
+	current_message = IDLE
+	message.text = current_message
+	remaining = 0.0
+	EventBus.world_event.emit({
+		"type": "LIVE_ENDED", "target": "Mirror", "cause": "knight",
+		"position": mirror.global_position, "narrative_value": 0.4,
+	})
+
+
 func _process(delta: float) -> void:
+	# While the Knight holds the channel the Kingdom has nothing to say through it.
+	if live and mirror._integrity > 0:
+		return
 	if mirror._integrity <= 0:
+		live = false
 		screen.hide()
 		pending.clear()
 		active_event = {}

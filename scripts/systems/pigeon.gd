@@ -81,7 +81,9 @@ func _process(delta: float) -> void:
 				state = State.READY
 				tip = "T: marcar alvo sob o cursor · P: enviar Pigeon"
 	var flying := state in [State.FLYING,State.RETURNING]
-	bird.texture = frames[1+int(clock*10)%3] if flying else frames[0]
+	# Ten drawn poses rather than the three this used to cycle: the whole wingbeat,
+	# which is what the sheet holds.
+	bird.texture = frames[1 + int(clock * 14) % (frames.size() - 1)] if flying else frames[0]
 	var scale_value := 38.0/frames[0].get_height()
 	bird.scale = Vector2.ONE*scale_value
 	bird.flip_h = state == State.RETURNING
@@ -193,7 +195,10 @@ func _update_live(delta: float) -> void:
 		if person.label != "Soldier" or person.disorganized_seconds > 0 or person.fear_seconds > 0:
 			continue
 		if absf(person.position.x-mirror.position.x) < 700:
-			person.alert_target_x = mirror.position.x
+			# Guards walk to the mirror while the Knight is on it. This used to set a
+			# field the walker never had, so the garrison never moved and the only
+			# thing that could end a broadcast was the player calling the bird back.
+			person.march_target = mirror.position.x
 			if absf(person.position.x-mirror.position.x) < 220:
 				spotted = true
 	awareness = clampf(awareness+delta*(1.0/8.0 if spotted else -0.04),0,1)
@@ -212,7 +217,7 @@ func return_home() -> void:
 	selected = 0
 	awareness = 0
 	for person in get_tree().get_nodes_in_group("people"):
-		person.alert_target_x = NAN
+		person.march_target = INF
 	tip = "Pigeon retornando ao Cavaleiro"
 
 func _intervention_ended(reason: String) -> void:
