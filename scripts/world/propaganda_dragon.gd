@@ -16,7 +16,7 @@ const HAZE = preload("res://scripts/village/house_haze.gdshader")
 # the grid and the neighbour's wing bled into view. The falling sheet keeps the
 # grid it was drawn on.
 const FRAME := Vector2i(1024, 352)
-const FALL_FRAME := Vector2i(1024, 307)
+const FALL_FRAME := Vector2i(1024, 380)
 const POSES := 5
 
 # The cloth, traced out of the artwork: for each column, where the banner's top
@@ -36,12 +36,19 @@ const CLOTH := [
 # The falling poses are drawn art, not the flying dragon rotated, so the banner
 # swings to a different place in every one of them. One traced outline per pose,
 # and the cloth is rebuilt as the pose changes.
+#
+# The sheet had to be rebuilt first. As drawn, the five poses overlapped each
+# other down the page — the dragon tumbles far enough that no grid could hold one
+# without catching its neighbours, so the fall showed stray pieces above and
+# below it. Each pose is one connected run of pixels, the banner tied to its own
+# dragon by its rope, so they were separated by connectivity rather than by
+# cutting, and each now sits alone in a taller cell.
 const FALL_CLOTH := [
-	[Vector3(602,94,136), Vector3(629,81,133), Vector3(656,84,138), Vector3(683,92,148), Vector3(710,108,164), Vector3(737,140,180), Vector3(764,143,195), Vector3(790,150,202), Vector3(817,152,205), Vector3(844,146,201), Vector3(871,133,191), Vector3(898,121,179), Vector3(925,142,171)],
-	[Vector3(613,104,133), Vector3(640,77,131), Vector3(667,81,135), Vector3(694,91,146), Vector3(721,105,161), Vector3(748,120,180), Vector3(775,132,192), Vector3(801,139,197), Vector3(828,137,195), Vector3(855,131,187), Vector3(882,123,177), Vector3(909,115,169), Vector3(936,131,166)],
-	[Vector3(610,76,118), Vector3(637,63,118), Vector3(664,68,125), Vector3(690,81,139), Vector3(717,103,145), Vector3(744,132,187), Vector3(770,144,201), Vector3(797,150,206), Vector3(824,145,203), Vector3(851,133,191), Vector3(878,124,179), Vector3(904,119,171), Vector3(931,139,171)],
-	[Vector3(610,54,99), Vector3(636,43,103), Vector3(662,48,106), Vector3(688,63,121), Vector3(714,90,138), Vector3(740,121,188), Vector3(766,145,208), Vector3(793,158,216), Vector3(819,160,216), Vector3(845,152,209), Vector3(871,140,197), Vector3(897,132,186), Vector3(923,151,180)],
-	[Vector3(618,109,138), Vector3(644,80,135), Vector3(670,75,132), Vector3(697,75,135), Vector3(723,85,143), Vector3(749,104,157), Vector3(776,137,180), Vector3(802,152,198), Vector3(828,155,203), Vector3(854,143,198), Vector3(880,124,185), Vector3(907,112,171), Vector3(933,134,167)],
+	[Vector3(602,95,137), Vector3(629,82,134), Vector3(656,85,139), Vector3(683,93,149), Vector3(710,109,165), Vector3(737,141,181), Vector3(764,144,196), Vector3(790,151,203), Vector3(817,153,206), Vector3(844,147,202), Vector3(871,134,192), Vector3(898,122,180), Vector3(925,143,172)],
+	[Vector3(612,110,137), Vector3(639,81,135), Vector3(666,85,139), Vector3(693,94,149), Vector3(720,108,165), Vector3(747,123,184), Vector3(774,136,196), Vector3(802,143,201), Vector3(829,141,198), Vector3(856,134,192), Vector3(883,127,181), Vector3(910,119,173), Vector3(937,140,170)],
+	[Vector3(609,92,121), Vector3(636,66,121), Vector3(663,71,128), Vector3(690,84,142), Vector3(717,106,148), Vector3(744,135,190), Vector3(771,147,205), Vector3(797,153,209), Vector3(824,148,206), Vector3(851,136,194), Vector3(878,127,182), Vector3(905,122,174), Vector3(932,144,174)],
+	[Vector3(610,49,94), Vector3(636,38,98), Vector3(662,43,101), Vector3(688,58,116), Vector3(714,85,133), Vector3(740,116,183), Vector3(766,140,203), Vector3(793,153,211), Vector3(819,155,211), Vector3(845,147,204), Vector3(871,135,192), Vector3(897,127,181), Vector3(923,146,175)],
+	[Vector3(618,133,162), Vector3(644,104,159), Vector3(670,99,156), Vector3(697,99,159), Vector3(723,109,167), Vector3(749,128,181), Vector3(776,161,204), Vector3(802,176,222), Vector3(828,179,227), Vector3(854,167,222), Vector3(880,148,209), Vector3(907,136,195), Vector3(933,158,191)],
 ]
 
 const GLASS := Vector2(660, 110)   # the viewport the banner text is written into
