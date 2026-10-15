@@ -52,5 +52,8 @@ func _process(delta: float) -> void:
 	_said += 1
 	# Enters over the castle and flies down the kingdom towards the knight, which is
 	# the way the art faces.
+	# High, near the top of the frame: the camera rests at y 350 on a 1080 screen, so
+	# the sky runs out around -190, and the dragon's own art hangs 36 below wherever
+	# it is put.
 	dragon.position = Vector2(preload("res://scripts/world/terraces.gd").WORLD_WIDTH + 200.0,
-		92.0 + randf_range(-26.0, 26.0))
+		-204.0 + randf_range(-18.0, 18.0))

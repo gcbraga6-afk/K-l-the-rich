@@ -64,6 +64,10 @@ var _shown := -1   # which falling pose the banner is currently cut for
 
 func _ready() -> void:
 	add_to_group("propaganda_dragons")
+	# A blast only reaches what is in this group. The hitbox made rounds detonate on
+	# the dragon, but nothing told the dragon it had been hit, so it flew on with the
+	# player's round bursting against its snout.
+	add_to_group("structures")
 	# Out at the depth of the far landscape, so it passes behind the tree line. The
 	# bands sit there too, and the sky node inserts the dragon between the valley
 	# and the woodland, so the trees cross in front of it while the mountains stay
@@ -92,10 +96,15 @@ func _ready() -> void:
 	hit.collision_mask = 0
 	hit.set_meta("structure_owner", self)
 	var shape := CollisionShape2D.new()
+	shape.name = "CollisionShape2D"
 	var box := RectangleShape2D.new()
-	box.size = Vector2(430, 150) * art_scale
+	# Everything the player can see of it: the dragon and the banner it tows, traced
+	# off the sheet at x 9..1011, y 39..299. It used to be a small rectangle over the
+	# dragon's shoulder, so most of the creature and the whole banner were not a
+	# target at all and the thing could not be shot down.
+	box.size = Vector2(1002, 260) * art_scale
 	shape.shape = box
-	shape.position = Vector2(230, 150) * art_scale
+	shape.position = Vector2(510, 169) * art_scale
 	hit.add_child(shape)
 	add_child(hit)
 
@@ -124,6 +133,16 @@ func _process(delta: float) -> void:
 	if position.x < -1500.0:
 		queue_free()
 
+# Everything in the "structures" group has to answer where it is before a blast
+# works out its damage.
+func closest_point(point: Vector2) -> Vector2:
+	var shape: CollisionShape2D = get_node("Hitbox/CollisionShape2D")
+	var box: RectangleShape2D = shape.shape
+	var rect := Rect2(global_position + shape.position - box.size * 0.5, box.size)
+	return Vector2(clampf(point.x, rect.position.x, rect.end.x),
+		clampf(point.y, rect.position.y, rect.end.y))
+
+
 # A round in the banner takes the dragon down. There is no partial damage: a
 # flying thing is either flying or it is not.
 func apply_explosion_damage(_amount: int, _source: Vector2, _ratio := 1.0, _radius := 155.0, _heading := Vector2.ZERO, _cascade := true) -> void:
@@ -133,6 +152,7 @@ func apply_explosion_damage(_amount: int, _source: Vector2, _ratio := 1.0, _radi
 	_pose = 0.0
 	sprite.texture.atlas = FALLING_SHEET
 	get_node("Hitbox").collision_layer = 0
+	remove_from_group("structures")
 	EventBus.world_event.emit({
 		"type": "PROPAGANDA_DRAGON_DOWNED",
 		"target": "PropagandaDragon",
