@@ -50,11 +50,17 @@ func _ready() -> void:
 		physical_house.name = "PhysicalHouse"
 		physical_house.set_script(preload("res://scripts/destruction/carved_house.gd"))
 		house.add_child(physical_house)
-	var tower := Node2D.new()
-	tower.name = "ModularStructure"
-	tower.set_script(preload("res://scripts/destruction/physical_castle_tower.gd"))
-	tower.kind = "castle"
-	$Structures/Castle.add_child(tower)
+	# The castle is carved like everything else now, with its own drawn interior.
+	# It used to be the one tower built out of stacked blocks, with the rest of the
+	# keep a static prop that could not be touched — the last of the old model.
+	var keep := Node2D.new()
+	keep.name = "PhysicalHouse"
+	keep.set_script(preload("res://scripts/destruction/carved_house.gd"))
+	keep.interior = preload("res://assets/castle/castle_interior.png")
+	# Three times the stone of a cottage wall, so the keep asks for a bombardment
+	# rather than a visit.
+	keep.toughness = 3.0
+	$Structures/Castle.add_child(keep)
 	var sky := Node2D.new()
 	sky.name = "PropagandaSky"
 	sky.set_script(preload("res://scripts/world/propaganda_sky.gd"))

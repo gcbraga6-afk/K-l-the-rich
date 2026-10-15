@@ -15,12 +15,22 @@ const MATERIALS := "res://assets/houses/materials/%s.png"
 const BITE := 0.15
 const RUINED := 0.6   # standing share below which the cottage counts as lost
 
+# Multiplies the bite for buildings that are not cottages. A keep took the same
+# hole per round as a thatched house, which put the castle down in six — and the
+# castle is what the whole intervention is aimed at. Walls that thick should ask
+# for a bombardment, not a visit.
+var toughness := 1.0
+
 var building: StaticBody2D
 var facade: Node2D
 var _whole := 1.0
 var _hit_reported := false
 var _collapsed := false
 
+
+# Set before this enters the tree when the building has its interior drawn rather
+# than assembled: the castle does, every floor of it.
+var interior: Texture2D = null
 
 func _ready() -> void:
 	building = get_parent()
@@ -40,7 +50,7 @@ func _ready() -> void:
 	facade.name = "Facade"
 	facade.set_script(Carved)
 	add_child(facade)
-	facade.setup(art.house_texture, art.house_width, art.ground_y - building.position.y, building, _map_for(art))
+	facade.setup(art.house_texture, art.house_width, art.ground_y - building.position.y, building, _map_for(art), interior)
 	_whole = maxf(facade.standing_ratio(), 0.001)
 
 
@@ -74,7 +84,7 @@ func damage_near(_amount: int, source: Vector2, strength: float, _radius := 155.
 		_hit(source)
 		return
 	var art = building.get_node("Artwork")
-	facade.carve(source, art.house_width * BITE * clampf(strength, 0.45, 1.0))
+	facade.carve(source, art.house_width * BITE * clampf(strength, 0.45, 1.0) / toughness)
 	# The hit registers at once, because the game reads damage the moment a round
 	# lands. The carve itself has to wait for the physics server, so what is left
 	# standing can only be measured afterwards.

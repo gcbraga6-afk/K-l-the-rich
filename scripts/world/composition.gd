@@ -94,7 +94,10 @@ func _ready() -> void:
 	world.get_node("Structures").add_child(fountain)
 	fountain.stand_at(2210.0)
 	var castle = world.get_node("Structures/Castle")
-	replace_art(castle, preload("res://assets/composition/castle.png"))
+	# The drawn castle, with its whole cutaway behind it: the carve model shows the
+	# inside of what it opens, and a keep has more inside worth seeing than anything
+	# else in the kingdom.
+	replace_art(castle, preload("res://assets/castle/castle_facade.png"))
 	place(castle, Vector2(6250,535), 950)
 	haze(castle.get_node("Artwork"), 0.055)
 	# The new enclosing wall belongs to the castle silhouette. Retire the old mock wall.

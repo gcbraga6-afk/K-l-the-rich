@@ -69,7 +69,10 @@ var _gone_windows := {}              # openings already blown out
 var _has_map := false                # whether this house carries a painted map
 
 
-func setup(texture: Texture2D, width: float, foot_y: float, structure: Node = null, materials: Texture2D = null) -> void:
+# `interior` is a room drawn by hand, aligned pixel for pixel with the facade. A
+# cottage has none and gets one assembled out of modules; the castle has its whole
+# cutaway drawn, every floor of it, and nothing assembled could match that.
+func setup(texture: Texture2D, width: float, foot_y: float, structure: Node = null, materials: Texture2D = null, interior: Texture2D = null) -> void:
 	owner_structure = structure
 	art = _lift(texture)
 	if art == null:
@@ -104,7 +107,10 @@ func setup(texture: Texture2D, width: float, foot_y: float, structure: Node = nu
 	for i in range(NOISE_SIZE * NOISE_SIZE):
 		var n: float = sin(float(i % NOISE_SIZE) * 12.9898 + float(i / NOISE_SIZE) * 78.233 + _tear_seed) * 43758.5453
 		_noise[i] = n - floor(n)
-	_build_interior()
+	if interior != null:
+		_painted_interior(interior)
+	else:
+		_build_interior()
 	_build_sprite()
 	_rebuild_collision(_silhouette())
 
@@ -649,6 +655,17 @@ func _build_sprite() -> void:
 # The room behind the facade: a back wall, a floor and the joists over them.
 # It is always there and always hidden; a breach is what reveals it.
 #
+# A room drawn by hand for this building alone, aligned pixel for pixel with its
+# facade. Scaled to the facade if the two were authored at different sizes, so the
+# floors line up with the windows that look onto them.
+func _painted_interior(texture: Texture2D) -> void:
+	var room := texture.get_image()
+	room.convert(Image.FORMAT_RGBA8)
+	if room.get_size() != art.get_size():
+		room.resize(art.get_width(), art.get_height(), Image.INTERPOLATE_LANCZOS)
+	_room_texture = ImageTexture.create_from_image(room)
+
+
 # Laid up from painted modules, tiled and seeded per house, so no two cottages
 # show the same room and nothing had to be drawn twenty times.
 func _build_interior() -> void:
