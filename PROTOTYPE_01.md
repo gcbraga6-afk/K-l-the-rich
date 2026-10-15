@@ -1,216 +1,223 @@
-# Prototype 0.1 - The Dry Kingdom
+# Protótipo 0.1 — The Dry Kingdom
 
-Objetivo: provar que um Reino lateral pequeno funciona como brinquedo sistemico antes de expandir para campanha, mapa do mundo ou economia entre Reinos.
+`0.1` é a primeira versão jogável: **uma fase única**, sem mapa e sem menu, só para
+provar que o Reino funciona. Depois vem 0.2, 0.3, e `1.0` é o jogo com campanha.
+Quando este documento diz "fora do 0.1", significa "não agora, entra numa versão
+seguinte" — nunca "cancelado". A visão completa está em `GAME_DESIGN.md`.
 
-## Escopo
+**Objetivo:** provar que um Reino lateral pequeno funciona como brinquedo sistêmico,
+sem objetivo imposto, antes de existir campanha, mapa do mundo ou economia entre
+Reinos.
 
-The Dry Kingdom e uma unica cena 2D horizontal no Godot 4.
+## Critérios de aprovação
 
-Nao inclui:
+O protótipo está aprovado quando:
 
-- world map;
-- multiplos Reinos;
-- objetivos ou missoes;
-- final de fase tradicional;
-- campanha de anos completa;
-- todas as familias de armas;
-- toda a simulacao politica final.
+- Depois de 5 minutos, **dois jogadores produzem histórias diferentes** usando só o
+  canhão.
+- **10 partidas de 10 minutos geram histórias distintas:** o Influencer tomou o poder;
+  matei o Rei e nada aconteceu; os soldados se amotinaram; destruí tanto a vila que o
+  Rei ficou mais forte; a Revolução morreu sozinha.
+- **Teste Run A × Run B:** quebrar o reservatório sem Pigeon e com Pigeon ao vivo gera
+  consequências sociais claramente diferentes, sem roteiros diferentes.
+- **Teste do Reino vivo:** abrir o jogo e não fazer nada por 5 minutos e ainda ver vida
+  — rotinas, luzes à noite, propaganda mudando, conversas.
+- O ciclo fecha: mirar → BOOM → algo quebra → pessoas percebem → conversam → mudam de
+  comportamento → Rei reage → nova oportunidade.
 
-Inclui o suficiente para testar:
+## Situação do Reino
 
-- Cavaleiro fixo a esquerda;
-- castelo a direita;
-- camera horizontal;
-- mira e tiro;
-- trajetoria de projetil;
-- dano/destruicao basica;
-- rotina autonoma;
-- Event Bus;
-- social minimo;
-- propaganda;
-- Pigeon em milestones.
+**Escassez de água.** A vila está quase seca. O reservatório e as fontes estão dentro
+do castelo. A fábrica consome água. O Rei diz que a seca afeta todos. Soldados protegem
+a infraestrutura. A população ainda está calma.
+
+Em nenhum lugar está escrito "libere a água". A informação está no cenário: fonte seca
+fora, fontes cheias dentro.
 
 ## Layout
 
-Mapa pequeno, cerca de 4 a 5 larguras de tela:
+Cena 2D horizontal única, 4–5 larguras de tela. Cavaleiro sempre no extremo esquerdo,
+castelo à direita.
 
 ```text
-KNIGHT -> village -> school -> factory -> mirror -> wall -> castle
-                                                        |
-                                                        reservoir
-                                                        barracks
-                                                        king
-                                                        prison
+CAVALEIRO → vila → escola → fábrica → Espelho → muralha → castelo
+                                                              |
+                                                     reservatório, bomba,
+                                                     quartel, prisão, Rei
 ```
 
-Elementos iniciais:
+População de referência: ~20 trabalhadores, ~5 burgueses, ~3 nobres, ~8 soldados,
+1 Influencer, 1 Rei. Entre 30 e 40 NPCs.
 
-- vila;
-- escola;
-- fabrica;
-- Espelho;
-- muralha;
-- castelo;
-- reservatorio;
-- quartel;
-- prisao;
-- Rei;
-- soldados;
-- civis de grupos diferentes.
+## Controles
 
-## Controle
+- Mouse mira o canhão; arrastar para trás junto ao canhão e soltar dispara (a força vem
+  do tamanho do arraste).
+- A câmera percorre o Reino independente do Cavaleiro.
+- Zoom pequeno.
+- Seleção de munição entre as famílias ativas.
+- Sem WASD no Cavaleiro: ele não se move.
 
-Direcao inicial:
+## Ritmo
 
-- mouse mira o canhao;
-- clique dispara;
-- camera move horizontalmente;
-- zoom pequeno pode existir;
-- selecao de municao quando houver mais de uma familia ativa.
+**Decisão fechada:** o ritmo **não** é imposto por recarga lenta nem por travas.
+Cadência de tiro curta. O que faz o jogador parar entre tiros é ter o que olhar:
 
-O Cavaleiro permanece sempre na esquerda. A camera pode viajar pelo Reino independentemente dele.
+- micro-diálogos em balão;
+- pessoas correndo com animação de verdade;
+- soldados que gritam e apontam, chamando atenção;
+- bandeirinhas subindo nas janelas;
+- propaganda mudando no Espelho.
 
-## Tempo
+Quem quiser esvaziar o canhão em dez segundos consegue, e perde o jogo que estava
+acontecendo. Isso é escolha do jogador, não bloqueio do sistema.
 
-- Sem limite de tempo de intervencao.
-- Ciclo diario acelerado.
-- NPCs seguem rotinas simples.
-- A intervencao termina por municao 0, expulsao fisica ou retirada voluntaria.
-- O Cavaleiro nao morre.
+Sem cronômetro. Esperar custa Frenesi decaindo, não tempo de relógio.
 
-## Municao
+## Munição
 
-O prototipo comeca com:
+O Cavaleiro chega com **8 rounds** e consegue mais dentro do Reino. Gasta-se munição
+para conseguir munição: errar é o que esvazia o canhão, não um relógio.
 
-- Basic;
-- Flash.
+| Fonte | Rende | Risco |
+| --- | --- | --- |
+| **Paiol real** | 6–8 | Detona com as caixas dentro: medo enorme e dano em volta |
+| **Carroça da Fairy Defense** | 2–3 | Alvo em movimento; a boleia leva um carreteiro |
+| **Arsenal fixo** | 1 por caixa visível | Guardado; o Rei pode fechá-lo |
 
-A quantidade de municao, composicao do loadout e ritmo entre disparos ainda sao perguntas do prototipo. O objetivo e descobrir qual limite produz leitura, tensao e consequencia sem transformar o jogo em puzzle fechado.
+A munição tomada **entra direto na conta**, sem recolher — o Cavaleiro não sai do
+lugar. O HUD mostra só quantos rounds ele tem, sem denominador: depois do primeiro
+paiol não existe tamanho de carregador.
 
-## Rotina autonoma minima
+A carroça atravessa o Reino da ponta da vila até o portão, então o tiro fácil é cedo,
+numa rua cheia de gente, e o difícil é tarde, longe e sob guarda.
 
-NPCs devem ter rotina simples, visivel e interrompivel:
+**A Intervenção não acaba com um round no ar.** Munição zerada só encerra depois que
+o céu está limpo e passa a carência — o último tiro é justamente o mais provável de
+estar mirando numa carroça, e encerrar no instante em que a conta zera tirava o
+reabastecimento antes dele pousar.
 
-- trabalhadores vao entre casa, fabrica e vila;
-- crianças podem aparecer perto da escola ou casas;
-- soldados patrulham, guardam muralha, quartel, reservatorio e castelo;
-- nobres ou burgueses circulam em zonas mais protegidas;
-- Rei permanece associado ao castelo;
-- Espelho transmite propaganda normal quando nao ha LIVE.
+## Janelas de oportunidade
 
-Crianças podem estar em risco, mas sem gore.
+Três no 0.1, criadas pela rotina e nunca anunciadas na tela:
 
-## Event Bus
+1. **Saída da fábrica / escola** — rua cheia, muitas testemunhas.
+2. **Troca de turno no quartel** — soldados juntos; um Flash desarma vários.
+3. **Discurso do Rei ao pôr do sol** — anunciado por sinos e pelo Espelho ("ROYAL
+   ADDRESS AT SUNSET"); Rei exposto na varanda, com guardas e muitas testemunhas.
 
-Primeira arquitetura a provar:
+## Legibilidade
 
-```text
-tiro -> impacto -> evento -> reacao fisica/social/narrativa
-```
+Nenhum número aparece ao jogador. Nenhum medidor, e isso inclui o painel atual
+"População: apreensiva · Guardas: desorganizados", que **sai do HUD** e passa para o
+debug overlay.
 
-Eventos iniciais sugeridos:
+No 0.1 entram dois canais, nesta ordem:
 
-- PROJECTILE_FIRED;
-- STRUCTURE_HIT;
-- STRUCTURE_DESTROYED;
-- PERSON_HIT;
-- SOLDIER_DISARMED;
-- RESERVOIR_OPENED;
-- MIRROR_DAMAGED;
-- PROPAGANDA_BROADCAST;
-- PIGEON_TARGET_MARKED;
-- PIGEON_CONNECTED;
-- LIVE_STARTED;
-- LIVE_ENDED;
-- PIGEON_SCARED_AWAY.
+1. **Micro-diálogos.** Balão estilo história em quadrinhos sobre 2–3 personagens
+   próximos. Letra bem maior que a atual. Poucos por vez, para não confundir. Banco
+   classificado por contexto (seca, propaganda, medo, revolta, repressão).
+2. **Bandeirinhas do Rei nas janelas.** Surgem e desaparecem a qualquer momento, sem
+   esperar "turno" do jogador: a bala pode estar no ar quando a primeira sobe.
 
-Campos importantes:
+Os demais canais (ruas vazias, mais guardas, transformação de estrutura) vêm depois.
 
-- tipo;
-- alvo;
-- causa;
-- local;
-- severidade;
-- testemunhas;
-- Valor Narrativo.
+## Fim da Intervenção
 
-## Social minimo
+Três motivos:
 
-O prototipo deve testar uma versao pequena de:
+1. **Munição zerada** → começa a **Resolução**: o HUD desaparece e o jogador fica
+   15–30 s apenas assistindo, com a câmera livre e sem poder atirar. É quando as coisas
+   grandes acontecem — a multidão chega ao portão, a casa rachada termina de cair, o
+   Espelho muda a mensagem, o Influencer fala.
+2. **Expulsão física** — soldados avançam até a posição do Cavaleiro e o empurram para
+   fora ("LEAVE OUR KINGDOM!"). Nunca barra de hostilidade e tela preta.
+3. **Retirada voluntária**, a qualquer momento.
 
-- Frenesi;
-- Medo;
-- Prestigio do Rei por grupo;
-- Prestigio do Influencer por grupo, se o Influencer entrar neste milestone;
-- Coesao dos soldados;
-- repressao;
-- deserção;
-- Motim.
+O Cavaleiro não morre. Nada termina a Intervenção porque o Rei morreu, a Revolução
+aconteceu ou o castelo caiu.
 
-Nao precisa provar a campanha inteira. Precisa mostrar que eventos fisicos alteram comportamento e percepcao de forma legivel.
+## Etapas
 
-## Propaganda e Espelho
+### Etapa A — Física · em grande parte pronta
 
-O Espelho tem apenas dois estados:
+| Item | Estado |
+| --- | --- |
+| Câmera lateral percorrendo o Reino | pronto |
+| Cavaleiro à esquerda, canhão, mira por arraste, prévia de trajetória | pronto |
+| Basic e Flash | pronto (Flash desarma soldado, com recuperação ligada à Coesão) |
+| Casas, comércio, casas nobres, escola, fábrica, Espelho, muralha, castelo | pronto |
+| Destruição recortada com entulho persistente | pronto |
+| Civis e soldados com rotina simples | parcial — rotina de trajeto existe, sem animação e sem comportamento de soldado |
+| Event Bus | parcial — existe e carrega severidade e Valor Narrativo |
+| Ciclo diário | pronto (4 min/dia; duração a validar) |
+| Reservatório, bomba, prisão, Rei no castelo | **falta** |
 
-- PROPAGANDA normal;
-- LIVE do Cavaleiro.
+### Etapa B — O Reino reage · o foco agora
 
-Nao ha canais.
+- ~~**Soldados de verdade**~~ — **feito.** [garrison.gd](scripts/systems/garrison.gd)
+  comanda quatro soldados em três graus, conforme o quanto o Reino já levou:
+  **perceber** (param, viram-se e gritam, num raio de 1000), **investigar** (vão até
+  onde aconteceu) e **avançar** (acima de 6 de provocação a guarnição larga a ronda e
+  caminha sobre o Cavaleiro; chegar a 150 dele encerra a Intervenção por expulsão).
+  Munição tomada conta em dobro: carroça arrombada na rua é o Cavaleiro se servindo
+  na frente de quem guardava.
+  **A Coesão é o portão:** abaixo de 32 ninguém se forma, por mais estrago que haja —
+  é aí que o Flash e o banquete do Rei passam a ter peso mecânico. Segundo Flash num
+  soldado ainda desarmado e ele **deserta**: larga capacete e posto.
+  Falta: reprimir a população, e Motim.
+- **Rei dentro do castelo**, se deslocando entre salas e **aparecendo pelas janelas**,
+  mais a varanda do discurso. Sem barra de vida: a dificuldade é achá-lo e ter linha de
+  tiro.
+- **Influencer como voz**, não como vida: Prestígio próprio e falas no Espelho
+  disputando o mesmo fato com o Rei. Sem casa, sem rotina, sem oficina — isso vem
+  depois. Duas vozes sobre o mesmo tiro é o que faz "informação não é verdade" existir.
+- **Água como puzzle:** reservatório → bomba → fontes, mais o cano da vila com válvula
+  fechada. Três alvos, três resultados diferentes.
+- **Prisão:** abrir liberta presos que andam pelo Reino como testemunhas materiais.
+- **Modelo de conhecimento mínimo:** cada NPC guarda apenas **viu / ouviu no Espelho /
+  não sabe**. Nada além disso. É o mínimo para o teste Run A × Run B significar algo.
+- **Mobilização mínima:** gente converge para um ponto quando Frenesi alto e Medo
+  baixo; com Coesão no chão, a multidão anda até o portão. Revolução completa com
+  tochas e foices não entra agora.
+- **Micro-diálogos e bandeirinhas** (ver Legibilidade).
+- **Resolução** depois do último tiro.
+- **Debug overlay** com todos os números.
+- **Estado do Reino serializável** desde já: população, recursos, dano por estrutura,
+  prestígios, Coesão, Confiança, memória. Sem mapa e sem anos ainda — só a capacidade
+  de salvar e reconstruir.
 
-Nao ha gravacao, captura ou replay. LIVE e ao vivo.
+### Etapa C — Pigeon e propaganda
 
-Propaganda reage a fatos:
+Fluxo completo do Pigeon (marcar targets → pousar dormente → CONNECT → LIVE → guardas
+espantam → cooldown) e propaganda reagindo a fatos. O Pigeon entra no 0.1, por último,
+e é o critério de aprovação — não um extra.
 
-- casa atingida pode virar narrativa contra o Cavaleiro;
-- reservatorio aberto pode enfraquecer narrativa do Rei;
-- soldados desorganizados podem reduzir percepcao de ordem;
-- escola ou crianças em risco podem ter alto Valor Narrativo.
-
-## Pigeon milestone
-
-Implementar depois do tiro/camera/dano/eventos basicos.
-
-Regras definitivas para validar:
-
-- voo semiautonomo;
-- targets podem ser pessoas ou estruturas;
-- Pigeon pousa dormente no Espelho sem ser percebido;
-- jogador prepara ou espera uma acao;
-- CONNECT inicia LIVE;
-- guardas percebem apenas quando LIVE comeca;
-- durante LIVE, alternar apenas entre targets previamente marcados;
-- guardas espantam o Pigeon;
-- Pigeon retorna ao Cavaleiro;
-- targets, percepcao e conexao zeram;
-- cooldown antes de novo uso.
-
-Pergunta do prototipo: a preparacao/espera antes do CONNECT gera tensao interessante?
-
-## Milestones sugeridos
-
-1. Cena lateral: camera, Cavaleiro, canhao, trajetoria e impactos.
-2. Destruicao basica: estruturas civis persistem danificadas/destruidas.
-3. Rotina autonoma: civis, soldados e ciclo diario acelerado.
-4. Event Bus: eventos fisicos alimentam sistemas simples.
-5. Social minimo: Frenesi, Medo, Coesao e primeiras respostas coletivas.
-6. Propaganda: Espelho em PROPAGANDA normal reagindo a fatos.
-7. Pigeon: marcar targets, CONNECT, LIVE, expulsao e cooldown.
-8. Fechamento de intervencao: municao 0, expulsao fisica ou retirada.
+Hoje `scripts/systems/pigeon.gd` existe com 243 linhas e **nada no projeto o
+instancia**.
 
 ## Fora do 0.1
 
-- campanha com varios Reinos;
-- mapa do mundo;
-- Fairy Defense Industries completa;
-- Incendiary, Impact completo e Mechanical Falcon;
-- censo final;
-- economia inter-Reinos;
-- clima global;
-- sucessoes politicas complexas;
-- simulacao detalhada de familias.
+Tudo isto é parte do jogo e está em `GAME_DESIGN.md`; só não entra nesta versão:
 
-## Frase-guia
+- mapa do mundo, 12 anos de campanha, viagens, evolução fora de tela, censo final;
+- clima, migração, interdependência entre Reinos;
+- riqueza como soma real de patrimônios das famílias;
+- Impact Bomb, Incendiária e **Mechanical Falcon** (o Falcon fica no design e é
+  implementado mais à frente, reaproveitando a nuvem de visão do Pigeon);
+- castelo procedural por módulos recombinados;
+- **população itinerante** (goblins ou criatura própria) — exige segunda espécie com
+  arte, acampamento e rotina próprias;
+- Fairy Defense Industries como presença no mapa;
+- jogo online;
+- Revolução completa, sucessões políticas complexas, simulação detalhada de famílias.
 
-> There are no missions. There are kingdoms. You don't complete them. You change them.
+## Pontos em aberto do protótipo
 
+- [ ] Quantidade de munição e se há seleção de loadout.
+- [ ] Duração do dia (4 min hoje; o design sugere 8–10).
+- [ ] Duração da Resolução dentro da faixa 15–30 s.
+- [ ] Cooldown, velocidade e percepção dos guardas que deixam o Pigeon "não tão fácil".
+- [ ] Thresholds de Frenesi, Medo, Confiança, Prestígio e Coesão.
+- [ ] Quantos micro-diálogos simultâneos antes de virar confusão.
+- [ ] Mapa físico exato do Dry Kingdom: o que fica entre Cavaleiro e castelo, e onde.

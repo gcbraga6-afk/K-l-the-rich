@@ -1,6 +1,11 @@
 extends Node2D
 
 const SHEET = preload("res://assets/characters/people_walk.png")
+# A soldier has three things to say that a walk cycle cannot: that he has noticed,
+# that he is coming, and that he has been taken apart. Painted poses, not frames.
+const SHOUT = preload("res://assets/characters/guard_shout.png")
+const ADVANCE = preload("res://assets/characters/guard_advance.png")
+const BROKEN = preload("res://assets/characters/guard_broken.png")
 var person: CharacterBody2D
 var sprite: Sprite2D
 var frames: Array = []
@@ -42,13 +47,26 @@ func _process(delta: float) -> void:
 	queue_redraw()
 
 func _update_frame(index: int) -> void:
-	sprite.texture = frames[index]
+	sprite.texture = _pose() if _pose() != null else frames[index]
 	var height := 92.0 if person.label == "Soldier" else 80.0
 	if person.label == "King":
 		height = 88.0
 	var factor: float = height / sprite.texture.get_height()
 	sprite.scale = Vector2(factor * facing, factor)
 	sprite.position = Vector2(-sprite.texture.get_width() * factor * facing / 2, -height)
+
+# Which painted pose this soldier is in, or nothing when he is simply walking.
+func _pose() -> Texture2D:
+	if person.label != "Soldier":
+		return null
+	if person.deserted or person.disorganized_seconds > 0.0:
+		return BROKEN
+	if person.alert_seconds > 0.0:
+		return SHOUT
+	if person.march_target != INF:
+		return ADVANCE
+	return null
+
 
 func _draw() -> void:
 	if person != null and person.disorganized_seconds > 0:

@@ -59,10 +59,30 @@ func _ready() -> void:
 	sky.name = "PropagandaSky"
 	sky.set_script(preload("res://scripts/world/propaganda_sky.gd"))
 	add_child(sky)
+	# The Kingdom's powder, and the only reason the cannon can outlast the load it
+	# arrived with. The store stands against the castle's near flank, where the
+	# carts unload: the strip between the noble terrace and the castle belongs to
+	# the Mirror, which spans 5400 to 5740, and a store dropped in there stood in
+	# the propaganda board and hung off the edge of the terrace. The cart sets out
+	# from the village end and climbs the road to the store.
+	var store := Node2D.new()
+	store.name = "PowderStore"
+	store.set_script(preload("res://scripts/world/powder_store.gd"))
+	store.position.x = 5880.0
+	add_child(store)
+	var cart := Node2D.new()
+	cart.name = "SupplyCart"
+	cart.set_script(preload("res://scripts/world/supply_cart.gd"))
+	add_child(cart)
 	var society := Node.new()
 	society.name = "Society"
 	society.set_script(preload("res://scripts/systems/kingdom_society.gd"))
 	add_child(society)
+	# Until the garrison existed, nothing the player did ever walked back at him.
+	var garrison := Node.new()
+	garrison.name = "Garrison"
+	garrison.set_script(preload("res://scripts/systems/garrison.gd"))
+	add_child(garrison)
 	var broadcast := Node2D.new()
 	broadcast.name = "Broadcast"
 	broadcast.set_script(preload("res://scripts/systems/mirror_broadcast.gd"))

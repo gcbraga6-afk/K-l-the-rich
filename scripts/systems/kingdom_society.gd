@@ -25,7 +25,8 @@ func witnesses(position: Vector2, radius: float = 600.0) -> Array:
 
 func _on_event(event: Dictionary) -> void:
 	var kind: String = event.get("type", "")
-	if kind not in ["STRUCTURE_HIT", "STRUCTURE_DESTROYED", "SOLDIER_DISORGANIZED", "RESERVOIR_OPENED"]:
+	if kind not in ["STRUCTURE_HIT", "STRUCTURE_DESTROYED", "SOLDIER_DISORGANIZED",
+			"RESERVOIR_OPENED", "PERSON_HIT", "POWDER_STORE_BLOWN"]:
 		return
 	var nearby := witnesses(event.get("position", Vector2.ZERO))
 	var severity: float = clampf(event.get("severity", 0.5), 0.1, 1.0)
@@ -47,6 +48,12 @@ func _on_event(event: Dictionary) -> void:
 			person._flee_direction = -1.0 if person.global_position.x < event.get("position", Vector2.ZERO).x else 1.0
 	for group in groups:
 		king_prestige[group] = clampf(king_prestige[group] - severity * 5, 0, 100)
+	# A worker killed by the Knight is the one fact the Kingdom does not have to
+	# frame: the people nearest it saw who fired, and the fear runs deeper than a
+	# broken wall does.
+	if kind == "PERSON_HIT":
+		fear = clampf(fear + severity * 14, 0, 100)
+		frenzy = clampf(frenzy + severity * 12, 0, 100)
 
 func receive_propaganda(event: Dictionary, audience: Array) -> void:
 	# Repeated slogans alone cannot generate legitimacy; a witnessed fact is required.

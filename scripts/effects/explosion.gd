@@ -36,6 +36,10 @@ func _apply_damage() -> void:
 		person.react_to_blast(global_position, weapon)
 	if weapon == "Flash":
 		return
+	# Powder goes off; a light does not open a crate. Caches are asked before the
+	# buildings, so a store that detonates adds its own blast to the same frame.
+	for cache in get_tree().get_nodes_in_group("ammo_caches"):
+		cache.seize(global_position, radius)
 	for node in get_tree().get_nodes_in_group("structures"):
 		if not node.has_method("apply_explosion_damage"):
 			continue

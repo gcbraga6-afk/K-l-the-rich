@@ -64,7 +64,9 @@ func _process(_delta: float) -> void:
 func _on_ammo_changed(current: int, total: int) -> void:
 	ammo = current
 	maximum = total
-	ammo_label.text = "%s · Munição %d/%d" % [weapon, ammo, maximum]
+	# No denominator. Once powder comes off carts and stores there is no magazine
+	# size to count against -- only how many rounds he is holding right now.
+	ammo_label.text = "%s · Munição %d" % [weapon, ammo]
 
 func _on_weapon_changed(selected: String) -> void:
 	weapon = selected
@@ -72,7 +74,11 @@ func _on_weapon_changed(selected: String) -> void:
 
 func _on_intervention_ended(reason: String) -> void:
 	status_label.visible = true
-	status_label.text = "Sem munição. O Reino continua — observe as consequências." if reason == "ammo_empty" else "Você se retirou. O Reino continua."
+	var endings := {
+		"ammo_empty": "Sem munição. O Reino continua — observe as consequências.",
+		"expelled": "LEAVE OUR KINGDOM! Você foi expulso. O Reino continua.",
+	}
+	status_label.text = endings.get(reason, "Você se retirou. O Reino continua.")
 
 func _on_world_event(event: Dictionary) -> void:
 	if event.get("type") == "PROPAGANDA_BROADCAST":
@@ -87,6 +93,12 @@ func _on_world_event(event: Dictionary) -> void:
 		"STRUCTURE_DESTROYED": "virou ruínas",
 		"PERSON_FRIGHTENED": "fugiu do impacto",
 		"SOLDIER_DISORGANIZED": "perdeu a formação",
+		"AMMO_SEIZED": "rendeu munição ao Cavaleiro",
+		"POWDER_STORE_BLOWN": "foi pelos ares",
+		"PERSON_HIT": "foi atingido",
+		"SOLDIER_DESERTED": "largou o posto",
+		"GARRISON_MARCHES": "avança sobre o Cavaleiro",
+		"KNIGHT_EXPELLED": "foi empurrado para fora do Reino",
 	}
 	history.push_front("%s — %s" % [event.target, descriptions.get(event.type, event.type)])
 	if history.size() > 5:

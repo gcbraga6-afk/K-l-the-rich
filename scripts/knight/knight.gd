@@ -9,6 +9,9 @@ extends Node2D
 @export var max_muzzle_speed := 3000.0
 @export var trajectory_points := 9
 @export var trajectory_step := 0.08
+# How long an empty rack waits, with nothing in the air, before the intervention
+# closes. Long enough for a carve to settle and a cart to give its crates back.
+@export var dry_grace_seconds := 1.6
 
 @onready var cannon_pivot: Node2D = $CannonPivot
 @onready var aim_dots: Node2D = $AimDots
@@ -21,9 +24,11 @@ var _ammo := 0
 var _intervention_active := true
 var _is_aiming := false
 var _aim_velocity := Vector2.ZERO
+var _dry_seconds := 0.0
 
 func _ready() -> void:
 	EventBus.intervention_ended.connect(_on_intervention_ended)
+	EventBus.ammo_seized.connect(_on_ammo_seized)
 	_ammo = max_ammo
 	aim_dots.visible = false
 	call_deferred("_emit_ammo_changed")
@@ -37,6 +42,7 @@ func _process(delta: float) -> void:
 		return
 
 	_cooldown = maxf(0.0, _cooldown - delta)
+	_check_dry(delta)
 
 	if Input.is_action_just_pressed("fire") and _can_start_aim():
 		_drag_anchor = cannon_pivot.global_position
@@ -138,7 +144,31 @@ func _fire(velocity: Vector2) -> void:
 
 	_cooldown = cooldown_seconds
 
-	if _ammo == 0:
+
+# Powder taken off a cart or a store reaches the cannon as rounds. There is no
+# ceiling: the load he arrived with is a starting point, not a magazine size, and
+# what the Kingdom was holding is now his.
+func _on_ammo_seized(amount: int, _position: Vector2, _source: String) -> void:
+	if not _intervention_active:
+		return
+	_ammo += amount
+	_dry_seconds = 0.0
+	_emit_ammo_changed()
+
+
+# An empty rack does not end the intervention while a round is still in the air.
+# The last shot of all is the one most likely to be aimed at a cart, and ending
+# the moment the rack reads zero took the resupply away before it could land --
+# and took the consequence of the final round with it.
+func _check_dry(delta: float) -> void:
+	if _ammo > 0:
+		_dry_seconds = 0.0
+		return
+	if not get_tree().get_nodes_in_group("active_projectiles").is_empty():
+		_dry_seconds = 0.0
+		return
+	_dry_seconds += delta
+	if _dry_seconds >= dry_grace_seconds:
 		_end_intervention("ammo_empty")
 
 

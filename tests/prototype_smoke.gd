@@ -42,8 +42,13 @@ func run() -> void:
 	assert(left > 0.5, "A single round must leave the cottage standing")
 	knight._ammo = 1
 	knight._fire(Vector2(1500, -1500))
-	assert(not knight._intervention_active, "Last shot must end intervention")
 	assert(get_tree().get_nodes_in_group("active_projectiles").size() == 1, "Last shot must remain in flight")
+	# An empty rack no longer closes the intervention on the spot. Powder comes off
+	# carts and stores now, so the last round of all is the one most likely to be
+	# aimed at a resupply: closing the moment the count read zero took the crates
+	# away before the round could reach them.
+	knight._process(0.4)
+	assert(knight._intervention_active, "An empty rack must wait for the round in the air")
 	var camera = world.get_node("KingdomCamera")
 	var projectile = get_tree().get_nodes_in_group("active_projectiles")[0]
 	assert(camera._follow_target == projectile, "Camera must follow fired projectile")
@@ -61,5 +66,8 @@ func run() -> void:
 	for frame in 180: camera._process(0.016)
 	assert(camera.position.x == camera.min_x, "Home must return to cannon")
 	await get_tree().create_timer(0.9).timeout
+	# Sky clear and the grace spent: now it closes.
+	knight._process(knight.dry_grace_seconds + 0.1)
+	assert(not knight._intervention_active, "An empty rack must close once the sky is clear")
 	print("PASS: Flash, fear, recovery, blast damage, ruins, last shot and projectile camera")
 	get_tree().quit()

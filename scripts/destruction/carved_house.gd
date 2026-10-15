@@ -46,11 +46,23 @@ func _ready() -> void:
 
 # Each cottage may carry a painted map of what its parts are made of. Without one
 # it is all masonry, which is what every house looked like before any were mapped.
+#
+# A village house is drawn from the catalog, and twenty of them share five sheets,
+# so the map belongs to the drawing rather than to the house standing in the
+# street: `house_02.png` is `house_catalog.house(2)`, the convention the painted
+# maps are filed under. Looking the map up by the node's own name instead meant
+# asking for `villagehouse03.png`, which no one had painted and no one ever will,
+# so every house in the Kingdom carved as plain masonry. Shops and noble houses
+# carry their own artwork and are still found by name.
 func _map_for(art) -> Texture2D:
-	var name := str(building.name).to_lower()
-	var path: String = MATERIALS % name
-	if ResourceLoader.exists(path):
-		return load(path)
+	var names: Array[String] = []
+	if building.has_meta("model"):
+		names.append("house_%02d" % int(building.get_meta("model")))
+	names.append(str(building.name).to_lower())
+	for name in names:
+		var path: String = MATERIALS % name
+		if ResourceLoader.exists(path):
+			return load(path)
 	return null
 
 

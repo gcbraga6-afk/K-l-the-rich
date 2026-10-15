@@ -60,6 +60,12 @@ func run() -> void:
 	await get_tree().create_timer(0.6).timeout
 	assert(is_zero_approx(cannon.recoil))
 	assert(cannon.pivot.position.distance_to(cannon.pivot_home) < 0.01)
+	# The rack is empty but the round is still out there, so the intervention holds.
+	assert(knight._intervention_active)
+	for projectile in get_tree().get_nodes_in_group("active_projectiles"):
+		projectile.queue_free()
+	await get_tree().process_frame
+	knight._process(knight.dry_grace_seconds + 0.1)
 	assert(not knight._intervention_active)
 	print("PASS: four factories, noble district, enlarged castle and last-shot cannon recoil/return")
 	get_tree().quit()

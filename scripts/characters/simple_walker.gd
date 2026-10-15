@@ -22,6 +22,13 @@ var current_activity := "caminhando"
 
 var fear_seconds := 0.0
 var disorganized_seconds := 0.0
+# A soldier's orders, written by the Garrison. Alert is the moment he notices
+# something and says so; the march is where he has been sent, which is either the
+# place it happened or the Knight himself.
+var alert_seconds := 0.0
+var alert_at := Vector2.ZERO
+var march_target := INF
+var deserted := false
 var _flee_direction := 1.0
 
 var _direction := 1.0
@@ -55,6 +62,22 @@ func _physics_process(delta: float) -> void:
 	if disorganized_seconds > 0.0:
 		name_label.text += " · desorganizado"
 		velocity.x = 0.0
+	elif alert_seconds > 0.0:
+		# He stops and points. Standing still and shouting is what tells the player,
+		# with no HUD and no number, that the Kingdom noticed.
+		name_label.text += " · alerta"
+		alert_seconds = maxf(0.0, alert_seconds - delta)
+		_direction = signf(alert_at.x - global_position.x) if not is_equal_approx(alert_at.x, global_position.x) else _direction
+		velocity.x = 0.0
+	elif march_target != INF:
+		var gap: float = march_target - global_position.x
+		if absf(gap) < 14.0:
+			march_target = INF
+			velocity.x = 0.0
+		else:
+			name_label.text += " · avançando"
+			_direction = signf(gap)
+			velocity.x = _direction * speed * 1.35
 	elif fear_seconds > 0.0:
 		name_label.text += " · fugindo"
 		velocity.x = _flee_direction * speed * 1.8
@@ -70,6 +93,9 @@ func _physics_process(delta: float) -> void:
 	global_position.y = preload("res://scripts/world/terraces.gd").walking_y(global_position.x)
 	global_position.x = clampf(global_position.x, 400.0, 6800.0)
 
+	if march_target != INF or alert_seconds > 0.0:
+		return
+
 	if global_position.x >= right_x and _direction > 0:
 		_direction = -1.0
 		patrol_wait = patrol_pause
@@ -77,7 +103,7 @@ func _physics_process(delta: float) -> void:
 		_direction = 1.0
 		patrol_wait = patrol_pause
 
-	name_label.visible = fear_seconds > 0.0 or disorganized_seconds > 0.0
+	name_label.visible = fear_seconds > 0.0 or disorganized_seconds > 0.0 or alert_seconds > 0.0 or march_target != INF
 	body.scale.x = _direction
 
 
@@ -89,6 +115,17 @@ func react_to_blast(source: Vector2, weapon: String) -> void:
 	fear_seconds = 4.0 + (1.0 - distance / reach) * 4.0
 	_flee_direction = -1.0 if source.x > global_position.x else 1.0
 	if label == "Soldier" and weapon == "Flash":
+		# A second light while he is still picking his weapon up is the end of him
+		# as a soldier: he leaves the helmet where it fell and walks off the post.
+		if disorganized_seconds > 0.0 and not deserted:
+			deserted = true
+			march_target = INF
+			alert_seconds = 0.0
+			EventBus.world_event.emit({
+				"type": "SOLDIER_DESERTED",
+				"target": str(name), "cause": weapon, "position": global_position,
+				"severity": 1.0, "narrative_value": 0.7,
+			})
 		disorganized_seconds = 7.0
 	EventBus.world_event.emit({
 		"type": "SOLDIER_DISORGANIZED" if disorganized_seconds > 0.0 else "PERSON_FRIGHTENED",
