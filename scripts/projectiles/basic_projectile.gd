@@ -1,5 +1,7 @@
 extends RigidBody2D
 
+const Terraces = preload("res://scripts/world/terraces.gd")
+
 @export var impact_severity := 0.25
 @export var narrative_value := 0.1
 @export var impact_effect_scene: PackedScene
@@ -24,21 +26,34 @@ func _ready() -> void:
 		mass = 6.0
 		linear_damp = 0.0
 	else:
-		# Flash detects masonry without physically pushing it like a cannonball.
+		# A flash that bursts on a roof reaches nobody: the people it is meant for are
+		# in the street. So it collides with nothing at all and goes off when it
+		# crosses the line the kingdom walks on, wherever that is — over a house, in
+		# front of it, behind it. Where it bursts is where it was aimed, which is what
+		# an aimed non-lethal round has to be.
 		collision_layer = 32
-		# The sensor below is what finds masonry. The body itself only has to notice
-		# the ground, never other rounds and never rubble.
-		collision_mask = 1
-		var sensor := Area2D.new()
-		sensor.collision_layer = 0
-		sensor.collision_mask = 16
-		var sensor_shape := CollisionShape2D.new()
-		sensor_shape.shape = $CollisionShape2D.shape.duplicate()
-		sensor.add_child(sensor_shape)
-		sensor.body_entered.connect(_on_body_entered)
-		add_child(sensor)
+		collision_mask = 0
 	continuous_cd = RigidBody2D.CCD_MODE_CAST_SHAPE
 	body_entered.connect(_on_body_entered)
+
+
+# A flash has nothing to hit, so it reports the ground it reached rather than a
+# building it struck.
+func _burst_on_the_street() -> void:
+	_has_impacted = true
+	EventBus.emit_projectile_impacted({
+		"type": "PROJECTILE_IMPACTED",
+		"cause": "knight",
+		"target": "Street",
+		"part": "street",
+		"position": global_position,
+		"severity": impact_severity,
+		"narrative_value": narrative_value,
+	})
+	EventBus.emit_camera_shake_requested(2.0, 0.08)
+	_spawn_impact_effect()
+	_spawn_explosion()
+	queue_free()
 
 
 func _on_body_entered(body: Node) -> void:
@@ -89,5 +104,11 @@ func _spawn_explosion() -> void:
 
 func _physics_process(delta: float) -> void:
 	_age += delta
+	# A flash collides with nothing, so nothing tells it when to go off: it watches
+	# for the street itself, at whatever height the terrace sits under it.
+	if weapon == "Flash" and not _has_impacted \
+		and global_position.y >= Terraces.walking_y(global_position.x):
+		_burst_on_the_street()
+		return
 	if _age > 15.0 or global_position.y > 1200.0 or global_position.x < -600.0 or global_position.x > 8200.0:
 		queue_free()
