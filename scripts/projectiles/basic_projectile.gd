@@ -53,6 +53,12 @@ func _burst_on_the_street() -> void:
 	EventBus.emit_camera_shake_requested(2.0, 0.08)
 	_spawn_impact_effect()
 	_spawn_explosion()
+	# The dazzle is on the screen, not in the world: whoever is watching took it in
+	# the eyes too.
+	var dazzle := CanvasLayer.new()
+	dazzle.name = "FlashDazzle"
+	dazzle.set_script(preload("res://scripts/effects/flash_dazzle.gd"))
+	get_tree().current_scene.add_child(dazzle)
 	queue_free()
 
 

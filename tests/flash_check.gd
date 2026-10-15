@@ -29,6 +29,19 @@ func run() -> void:
 	var hit: Dictionary = where[0]
 	print("FLASH burst at ", hit.position, " on ", hit.target)
 	assert(hit.target == "Street", "A flash must burst on the street, not on a building")
+	# The dazzle is the point of the round, so the test has to look at it while it is
+	# there. A broken shader let this pass green with nothing on screen at all.
+	var dazzle = get_tree().current_scene.get_node_or_null("FlashDazzle")
+	assert(dazzle != null, "A flash must dazzle whoever is watching")
+	var shader: Shader = dazzle._ghost.material.shader
+	assert(shader != null and shader.code.contains("hint_screen_texture"),
+		"The after-image shader must read the screen the way this engine offers it")
+	assert(dazzle._sheet.color.a > 0.5, "The screen must go white at the burst")
+	# And the eyes must come back: the white lifts and the smear takes over.
+	await steps(90)
+	assert(dazzle._sheet.color.a < 0.05, "The white must lift")
+	assert(dazzle._ghost.material.get_shader_parameter("strength") > 0.1,
+		"The after-image must be there once the white has gone")
 	var street: float = Terraces.walking_y(hit.position.x)
 	assert(absf(hit.position.y - street) < 40.0,
 		"The flash must burst at the height the kingdom walks on, not above it")
@@ -39,7 +52,7 @@ func run() -> void:
 	await steps(240)
 	assert(is_equal_approx(house.get_node("PhysicalHouse").facade.standing_ratio(), before),
 		"A flash must leave the masonry alone")
-	print("PASS: the flash reaches the street and breaks nothing")
+	print("PASS: the flash reaches the street, dazzles the screen and breaks nothing")
 	get_tree().quit()
 
 func steps(count: int) -> void:
